@@ -5,7 +5,7 @@ const pool = new pg.Pool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PWD,
-  port: process.env.DB_PORT,
+  port: 3000,
 })
 
 pool.connect((err, client, release) => {
