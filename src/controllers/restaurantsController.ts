@@ -3,8 +3,9 @@ import { Request, Response } from "express";
 import pool from "../db.js";
 import restaurantsNearYouSchema from "../schemas/restaurantsNearYouReq.js";
 import { sendResponse, Status, Operation } from "../helpers/responses.js";
+import logError from "../helpers/logger.js";
 
-const defaultRange = Number(process.env.DEFAULT_RANGE || 100);
+const defaultRange = Number(process.env.DEFAULT_RANGE);
 
 export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   const validatedRequest = restaurantsNearYouSchema.safeParse(req.query);
@@ -25,6 +26,19 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   const userLatitude = Number(validatedRequest.data.user_lat);
   const userLongitude = Number(validatedRequest.data.user_lon);
 
+  if (
+    Number.isNaN(userLatitude) ||
+    Number.isNaN(range) ||
+    Number.isNaN(userLongitude)
+  ) {
+    return sendResponse(
+      res,
+      Status.Fail,
+      "Invalid query values",
+      Operation.BadRequest
+    );
+  }
+
   try {
     const { rows } = await pool.query(
       `SELECT 
@@ -42,7 +56,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
           restaurant r
       INNER JOIN 
           restaurant_address ra ON r.id = ra.restaurant_id
-      WHERE 
+      WHERE
           (6371 * acos(cos(radians($1)) * cos(radians(ra.latitude)) * cos(radians(ra.longitude) - radians($2)) 
           + sin(radians($1)) * sin(radians(ra.latitude)))) <= $3
       `,
@@ -56,8 +70,8 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
       Operation.Ok,
       rows
     );
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    logError("Custom error", error);
     sendResponse(
       res,
       Status.Error,
