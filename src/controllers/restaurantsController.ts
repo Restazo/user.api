@@ -46,7 +46,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
       `SELECT 
       r.id, 
       r.name,
-      r.cover_file_name as "coverImage",
+      r.cover_file_path as "coverImage",
       r.description,
       r.affordability,
       ra.latitude, 
