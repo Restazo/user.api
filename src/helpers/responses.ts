@@ -1,38 +1,6 @@
-import { Response } from "express";
-
-export enum Status {
-  Success = "success",
-  Fail = "fail",
-  Error = "error",
-}
-
-export enum Operation {
-  Ok = "ok",
-  Created = "created",
-  NoContent = "noContent",
-  BadRequest = "badRequest",
-  Unauthorized = "unauthorized",
-  Forbidden = "forbidden",
-  NotFound = "notFound",
-  NotAllowed = "notAllowed",
-  Conflict = "conflict",
-  ServerError = "serverError",
-  ServiceUnavailable = "serviceUnavailable",
-}
-
-const statusCodeMap: { [key in Operation]: number } = {
-  ok: 200,
-  created: 201,
-  noContent: 204,
-  badRequest: 400,
-  unauthorized: 401,
-  forbidden: 403,
-  notFound: 404,
-  notAllowed: 405,
-  conflict: 409,
-  serverError: 500,
-  serviceUnavailable: 503,
-};
+import { Response, response } from "express";
+import Status from "./types/status.js";
+import { Operation, statusCodeMap } from "./types/operation.js";
 
 class ResponseBody {
   status: Status;
@@ -52,7 +20,7 @@ export const sendResponse = async (
   message: string,
   operation: Operation,
   data?: object
-) => {
+): Promise<Response> => {
   const statusCode = statusCodeMap[operation];
   const resBody = new ResponseBody(status, message, data);
 

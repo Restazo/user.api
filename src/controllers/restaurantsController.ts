@@ -2,8 +2,10 @@ import { Request, Response } from "express";
 
 import pool from "../db.js";
 import restaurantsNearYouSchema from "../schemas/restaurantsNearYouReq.js";
-import { sendResponse, Status, Operation } from "../helpers/responses.js";
+import { sendResponse } from "../helpers/responses.js";
 import logError from "../helpers/logger.js";
+import Status from "../helpers/types/status.js";
+import { Operation } from "../helpers/types/operation.js";
 
 const defaultRange = Number(process.env.DEFAULT_RANGE);
 
@@ -59,6 +61,8 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
       WHERE
           (6371 * acos(cos(radians($1)) * cos(radians(ra.latitude)) * cos(radians(ra.longitude) - radians($2)) 
           + sin(radians($1)) * sin(radians(ra.latitude)))) <= $3
+      ORDER BY
+        distance_km;sdfsdf
       `,
       [userLatitude, userLongitude, range]
     );
@@ -71,7 +75,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
       rows
     );
   } catch (error: any) {
-    logError("Custom error", error);
+    logError("Failed to fetch user closest restaurants", error);
     sendResponse(
       res,
       Status.Error,

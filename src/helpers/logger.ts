@@ -16,6 +16,9 @@ const logError = (message: string, error?: any) => {
 
   let log = `${formattedDate} ||| ${message} ||| ${error}`;
   console.error(log);
+  if (process.env.ENV === "dev" && error) {
+    console.error(error);
+  }
 };
 
 export default logError;
