@@ -62,7 +62,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
           (6371 * acos(cos(radians($1)) * cos(radians(ra.latitude)) * cos(radians(ra.longitude) - radians($2)) 
           + sin(radians($1)) * sin(radians(ra.latitude)))) <= $3
       ORDER BY
-        distance_km;sdfsdf
+        distance_km;
       `,
       [userLatitude, userLongitude, range]
     );
