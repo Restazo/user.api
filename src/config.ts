@@ -1,8 +1,6 @@
-import dotenv from "dotenv"
+import dotenv from "dotenv";
 
-
-
-dotenv.config()
+dotenv.config();
 
 if (
   !process.env.ENV ||
@@ -10,9 +8,10 @@ if (
   !process.env.DB_USER ||
   !process.env.DB_PWD ||
   !process.env.DB_HOST ||
-  !process.env.DB_PORT
+  !process.env.DB_PORT ||
+  !process.env.DEFAULT_RANGE
 ) {
-  console.log("Missing environmental variables. Check your .env file.")
-  console.log("Terminating application...")
-  process.exit(1)
+  console.log("Missing environmental variables. Check your .env file.");
+  console.log("Terminating application...");
+  process.exit(1);
 }
