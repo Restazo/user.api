@@ -8,6 +8,8 @@ import Status from "../helpers/types/status.js";
 import { Operation } from "../helpers/types/operation.js";
 
 const defaultRange = Number(process.env.DEFAULT_RANGE);
+const defaultLatitude = Number(process.env.DEFAULT_LAT);
+const defaultLongitude = Number(process.env.DEFAULT_LON);
 
 export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   const validatedRequest = restaurantsNearYouSchema.safeParse(req.query);
@@ -25,8 +27,14 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   const range = validatedRequest.data.range
     ? Number(validatedRequest.data.range)
     : defaultRange;
-  const userLatitude = Number(validatedRequest.data.user_lat);
-  const userLongitude = Number(validatedRequest.data.user_lon);
+  const userLatitude =
+    validatedRequest.data.user_lat && validatedRequest.data.user_lon
+      ? Number(validatedRequest.data.user_lat)
+      : defaultLatitude;
+  const userLongitude =
+    validatedRequest.data.user_lat && validatedRequest.data.user_lon
+      ? Number(validatedRequest.data.user_lon)
+      : defaultLongitude;
 
   if (
     Number.isNaN(userLatitude) ||

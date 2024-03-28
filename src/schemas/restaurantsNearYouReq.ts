@@ -1,8 +1,8 @@
 import * as z from "zod";
 
 const restaurantsNearYouSchema = z.object({
-  user_lat: z.string(),
-  user_lon: z.string(),
+  user_lat: z.string().optional(),
+  user_lon: z.string().optional(),
   range: z.string().optional(),
 });
 
