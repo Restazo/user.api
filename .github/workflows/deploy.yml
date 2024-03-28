@@ -24,5 +24,3 @@ jobs:
             npm ci
             npm run build
             pm2 restart restazo-user-api
-
-# test
