@@ -2,7 +2,7 @@ name: Deployment of the User application API
 
 on:
   push:
-    branches: ["ci-cd"]
+    branches: ["main"]
 
 jobs:
   deploy-business-application-api:
