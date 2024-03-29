@@ -28,7 +28,6 @@ app.use("/restaurants", restaurantsRoutes);
 
 // Respond if none of the endpoints matched
 app.all("*", (req, res, next) => {
-  console.log(req.method);
   sendResponse(
     res,
     Status.Fail,
