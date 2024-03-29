@@ -68,7 +68,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
           restaurant_address ra ON r.id = ra.restaurant_id
       WHERE
           (6371 * acos(cos(radians($1)) * cos(radians(ra.latitude)) * cos(radians(ra.longitude) - radians($2)) 
-          + sin(radians($1)) * sin(radians(ra.latitude)))) <= $3
+          + sin(radians($1)) * sin(radians(ra.latitude)))) <= $3 AND r.listed = true
       ORDER BY
         distance_km;
       `,
