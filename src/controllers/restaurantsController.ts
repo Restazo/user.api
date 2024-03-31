@@ -50,18 +50,19 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   }
 
   try {
-    const { rows } = await pool.query(
+    let { rows } = await pool.query(
       `SELECT 
       r.id, 
       r.name,
       r.cover_file_path as "coverImage",
+      r.logo_file_path as "logoImage",
       r.description,
       r.affordability,
       ra.latitude, 
       ra.longitude,
       ra.address_line as "addressLine",
       (6371 * acos(cos(radians($1)) * cos(radians(ra.latitude)) * cos(radians(ra.longitude) - radians($2)) 
-      + sin(radians($1)) * sin(radians(ra.latitude)))) AS distance_km
+      + sin(radians($1)) * sin(radians(ra.latitude)))) AS "distanceKm"
       FROM 
           restaurant r
       INNER JOIN 
@@ -70,10 +71,21 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
           (6371 * acos(cos(radians($1)) * cos(radians(ra.latitude)) * cos(radians(ra.longitude) - radians($2)) 
           + sin(radians($1)) * sin(radians(ra.latitude)))) <= $3 AND r.listed = true
       ORDER BY
-        distance_km;
+          "distanceKm";
       `,
       [userLatitude, userLongitude, range]
     );
+
+    rows = rows.map((restaurantElement) => {
+      return {
+        ...restaurantElement,
+        coverImage: `${process.env.IMAGES_URL}${restaurantElement.coverImage}`,
+        logoImage: `${process.env.IMAGES_URL}${restaurantElement.logoImage}`,
+        distanceKm: restaurantElement.distanceKm.toFixed(1),
+      };
+    });
+
+    console.log(rows);
 
     sendResponse(
       res,
