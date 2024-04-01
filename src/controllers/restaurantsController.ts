@@ -1,11 +1,21 @@
 import { Request, Response } from "express";
 
 import pool from "../db.js";
-import restaurantsNearYouSchema from "../schemas/restaurantsNearYouReq.js";
 import { sendResponse } from "../helpers/responses.js";
 import logError from "../helpers/logger.js";
 import Status from "../helpers/types/status.js";
 import { Operation } from "../helpers/types/operation.js";
+import {
+  getRestaurantAddressById,
+  getRestaurantById,
+  getRestaurantMenuByRestaurantId,
+} from "../data/restaurant.js";
+
+import restaurantsNearYouSchema from "../schemas/restaurantsNearYouReq.js";
+import {
+  RestaurantOverviewReqSchema,
+  RestaurantOverviewResSchema,
+} from "../schemas/schemas.js";
 
 const defaultRange = Number(process.env.DEFAULT_RANGE);
 const defaultLatitude = Number(process.env.DEFAULT_LAT);
@@ -85,6 +95,73 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   } catch (error: any) {
     logError("Failed to fetch user closest restaurants", error);
     sendResponse(
+      res,
+      Status.Error,
+      "An error occurred while fetching data",
+      Operation.ServerError
+    );
+  }
+};
+
+export const getRestaurantOverview = async (req: Request, res: Response) => {
+  try {
+    const validatedRequest = RestaurantOverviewReqSchema.safeParse(req.params);
+
+    if (!validatedRequest.success) {
+      return sendResponse(
+        res,
+        Status.Fail,
+        "Invalid request",
+        Operation.BadRequest
+      );
+    }
+
+    const { restaurantId } = validatedRequest.data;
+
+    const restaurantData = await getRestaurantById(restaurantId);
+
+    const restaurantAddressData = await getRestaurantAddressById(restaurantId);
+
+    const menuData = await getRestaurantMenuByRestaurantId(restaurantId);
+
+    if (!restaurantData || !menuData || !restaurantAddressData) {
+      return sendResponse(
+        res,
+        Status.Error,
+        "An error occurred while fetching data",
+        Operation.ServerError
+      );
+    }
+
+    const resData = {
+      restaurant: {
+        ...restaurantData,
+        address: restaurantAddressData,
+        menu: menuData,
+      },
+    };
+
+    const validatedResData = RestaurantOverviewResSchema.safeParse(resData);
+
+    if (!validatedResData.success) {
+      return sendResponse(
+        res,
+        Status.Error,
+        "An error occurred while fetching data",
+        Operation.ServerError
+      );
+    }
+
+    return sendResponse(
+      res,
+      Status.Success,
+      `Restaurant overview`,
+      Operation.Ok,
+      validatedResData
+    );
+  } catch (error) {
+    logError("Failed to fetch restaurant overview data", error);
+    return sendResponse(
       res,
       Status.Error,
       "An error occurred while fetching data",
