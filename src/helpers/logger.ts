@@ -14,7 +14,9 @@ const logError = (message: string, error?: any) => {
     .toString()
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 
-  let log = `${formattedDate} ||| ${message} ||| ${error}`;
+  let log = `${formattedDate} ||| ${message} ||| ${
+    error ? error : "No error object provided"
+  }`;
   console.error(log);
   if (process.env.ENV === "dev" && error) {
     console.error(error);

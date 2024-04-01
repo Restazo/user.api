@@ -24,8 +24,8 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   }
 
   // Convert all the query values into numbers
-  const range = validatedRequest.data.range
-    ? Number(validatedRequest.data.range)
+  const rangeKm = validatedRequest.data.range_km
+    ? Number(validatedRequest.data.range_km)
     : defaultRange;
   const userLatitude =
     validatedRequest.data.user_lat && validatedRequest.data.user_lon
@@ -38,8 +38,9 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
 
   if (
     Number.isNaN(userLatitude) ||
-    Number.isNaN(range) ||
-    Number.isNaN(userLongitude)
+    Number.isNaN(rangeKm) ||
+    Number.isNaN(userLongitude) ||
+    rangeKm <= 0
   ) {
     return sendResponse(res, "Invalid query values", Operation.BadRequest);
   }
@@ -68,7 +69,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
       ORDER BY
           "distanceKm";
       `,
-      [userLatitude, userLongitude, range]
+      [userLatitude, userLongitude, rangeKm]
     );
 
     // Validate each restaurant element from the database query
@@ -106,7 +107,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
     // Send a successful response with result
     sendResponse(
       res,
-      `Restaurants near you within ${range}km range`,
+      `Restaurants near you within ${rangeKm}km range`,
       Operation.Ok,
       result
     );
