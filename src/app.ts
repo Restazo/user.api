@@ -6,7 +6,7 @@ import "./config.js";
 import restaurantsRoutes from "./routes/restaurantsRoutes.js";
 import { sendResponse } from "./helpers/responses.js";
 import Status from "./helpers/types/status.js";
-import { Operation } from "./helpers/types/operation.js";
+import { Operation } from "./helpers/types/responseMaps.js";
 
 const app = express();
 

@@ -4,8 +4,7 @@ import pool from "../db.js";
 import restaurantsNearYouSchema from "../schemas/restaurantsNearYouReq.js";
 import { sendResponse } from "../helpers/responses.js";
 import logError from "../helpers/logger.js";
-import Status from "../helpers/types/status.js";
-import { Operation } from "../helpers/types/operation.js";
+import { Operation } from "../helpers/types/responseMaps.js";
 
 const defaultRange = Number(process.env.DEFAULT_RANGE);
 const defaultLatitude = Number(process.env.DEFAULT_LAT);
@@ -15,12 +14,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   const validatedRequest = restaurantsNearYouSchema.safeParse(req.query);
 
   if (!validatedRequest.success) {
-    return sendResponse(
-      res,
-      Status.Fail,
-      "Invalid request",
-      Operation.BadRequest
-    );
+    return sendResponse(res, "Invalid request", Operation.BadRequest);
   }
 
   // Convert all the query values into numbers
@@ -41,12 +35,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
     Number.isNaN(range) ||
     Number.isNaN(userLongitude)
   ) {
-    return sendResponse(
-      res,
-      Status.Fail,
-      "Invalid query values",
-      Operation.BadRequest
-    );
+    return sendResponse(res, "Invalid query values", Operation.BadRequest);
   }
 
   try {
@@ -89,7 +78,6 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
 
     sendResponse(
       res,
-      Status.Success,
       `Restaurants near you within the range of ${range}km`,
       Operation.Ok,
       rows
@@ -98,7 +86,6 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
     logError("Failed to fetch user closest restaurants", error);
     sendResponse(
       res,
-      Status.Error,
       "An error occurred while fetching data",
       Operation.ServerError
     );
