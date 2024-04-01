@@ -1,14 +1,18 @@
-import * as z from "zod";
+export interface RestaurantNearUser {
+  id: string;
+  name: string;
+  coverImage: string | null;
+  logoImage: string | null;
+  description: string | null;
+  affordability: number | null;
+  latitude: string;
+  longitude: string;
+  addressLine: string;
+  distanceKm: number;
+}
 
-export const EnvSchRestaurantDataema = z.object({
-  id: z.string().uuid(),
-  name: z.string().min(1),
-  coverImage: z.string().nullable(),
-  logoImage: z.string().nullable(),
-  description: z.string().nullable(),
-  affordability: z.number().nullable(),
-  latitude: z.string().min(1),
-  longitude: z.string().min(1),
-  addressLine: z.string().min(1),
-  distanceKm: z.string().min(1),
-});
+// Type that extends RestaurantNearUser but modifies distanceKm
+export interface ProcessedRestaurantElement
+  extends Omit<RestaurantNearUser, "distanceKm"> {
+  distanceKm: string;
+}

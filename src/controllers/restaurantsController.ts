@@ -5,6 +5,12 @@ import restaurantsNearYouSchema from "../schemas/restaurantsNearYouReq.js";
 import { sendResponse } from "../helpers/responses.js";
 import logError from "../helpers/logger.js";
 import { Operation } from "../helpers/types/responseMaps.js";
+import {
+  RestaurantNearUser,
+  ProcessedRestaurantElement,
+} from "../helpers/types/restaurantData.js";
+import { RestaurantData } from "../schemas/restaurantNearYouElement.js";
+import getImageUrl from "../helpers/getImageUrl.js";
 
 const defaultRange = Number(process.env.DEFAULT_RANGE);
 const defaultLatitude = Number(process.env.DEFAULT_LAT);
@@ -39,7 +45,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   }
 
   try {
-    let { rows } = await pool.query(
+    const { rows } = await pool.query(
       `SELECT 
       r.id, 
       r.name,
@@ -65,28 +71,53 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
       [userLatitude, userLongitude, range]
     );
 
-    rows = rows.map((restaurantElement) => {
-      return {
-        ...restaurantElement,
-        coverImage: `${process.env.IMAGES_URL}${restaurantElement.coverImage}`,
-        logoImage: `${process.env.IMAGES_URL}${restaurantElement.logoImage}`,
-        distanceKm: restaurantElement.distanceKm.toFixed(1),
-      };
-    });
+    // Validate each restaurant element from the database query
+    const result: ProcessedRestaurantElement[] = rows.reduce(
+      (
+        acc: ProcessedRestaurantElement[],
+        restaurantElement: RestaurantNearUser
+      ) => {
+        // Validate with the schema
+        const validatedRestaurantElement =
+          RestaurantData.safeParse(restaurantElement);
 
-    console.log(rows);
+        // Don't add just validated element if its validation failed
+        // and log an error
+        if (!validatedRestaurantElement.success) {
+          logError(
+            "Restaurant near user returned from database failed validation"
+          );
+          return acc;
+        }
 
+        // Add an element to accumulator with modified images and distance
+        acc.push({
+          ...restaurantElement,
+          coverImage: getImageUrl(restaurantElement.coverImage),
+          logoImage: getImageUrl(restaurantElement.logoImage),
+          distanceKm: restaurantElement.distanceKm.toFixed(1),
+        });
+
+        return acc;
+      },
+      []
+    );
+
+    // Send a successful response with result
     sendResponse(
       res,
-      `Restaurants near you within the range of ${range}km`,
+      `Restaurants near you within ${range}km range`,
       Operation.Ok,
-      rows
+      result
     );
   } catch (error: any) {
+    // Log caught error
     logError("Failed to fetch user closest restaurants", error);
+
+    // Send an error response back to the client
     sendResponse(
       res,
-      "An error occurred while fetching data",
+      "We are having some problems with looking for restaurants near you",
       Operation.ServerError
     );
   }
