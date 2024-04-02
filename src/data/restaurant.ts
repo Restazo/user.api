@@ -43,8 +43,8 @@ export const getRestaurantById = async (
 
     return restaurant;
   } catch (error) {
-    console.error(error);
-    return null;
+    console.error("Error from getRestaurantById function");
+    throw error;
   }
 };
 
@@ -68,8 +68,8 @@ export const getRestaurantAddressById = async (
 
     return address;
   } catch (error) {
-    console.error(error);
-    return null;
+    console.error("Error from getRestaurantAddressById function");
+    throw error;
   }
 };
 
@@ -135,7 +135,7 @@ export const getRestaurantMenuByRestaurantId = async (
 
     return menu;
   } catch (error) {
-    console.error(error);
-    return null;
+    console.error("Error from getRestaurantMenuByRestaurantId function");
+    throw error;
   }
 };

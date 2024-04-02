@@ -120,16 +120,25 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
 
     const restaurantData = await getRestaurantById(restaurantId);
 
+    if (!restaurantData) {
+      return sendResponse(
+        res,
+        Status.Fail,
+        "No data found",
+        Operation.NotFound
+      );
+    }
+
     const restaurantAddressData = await getRestaurantAddressById(restaurantId);
 
     const menuData = await getRestaurantMenuByRestaurantId(restaurantId);
 
-    if (!restaurantData || !menuData || !restaurantAddressData) {
+    if (!menuData || !restaurantAddressData) {
       return sendResponse(
         res,
-        Status.Error,
-        "An error occurred while fetching data",
-        Operation.ServerError
+        Status.Fail,
+        "No data found",
+        Operation.NotFound
       );
     }
 
@@ -141,16 +150,7 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
       },
     };
 
-    const validatedResData = RestaurantOverviewResSchema.safeParse(resData);
-
-    if (!validatedResData.success) {
-      return sendResponse(
-        res,
-        Status.Error,
-        "An error occurred while fetching data",
-        Operation.ServerError
-      );
-    }
+    const validatedResData = RestaurantOverviewResSchema.parse(resData);
 
     return sendResponse(
       res,

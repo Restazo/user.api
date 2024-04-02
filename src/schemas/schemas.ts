@@ -47,10 +47,9 @@ export const RestaurantOverviewReqSchema = z.object({
   restaurantId: z.string().min(1).uuid(),
 });
 
-
 export const RestaurantOverviewResSchema = z.object({
   restaurant: RestaurantSchema.extend({
     address: ExtendedAddressSchema,
-    menu: MenuSchema
-  })
-})
+    menu: MenuSchema,
+  }),
+});
