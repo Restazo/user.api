@@ -5,10 +5,6 @@ import restaurantsNearYouSchema from "../schemas/restaurantsNearYouReq.js";
 import { sendResponse } from "../helpers/responses.js";
 import logError from "../helpers/logger.js";
 import { Operation } from "../helpers/types/responseMaps.js";
-import {
-  RestaurantNearUser,
-  ProcessedRestaurantElement,
-} from "../helpers/types/restaurantData.js";
 import RestaurantsNearUser from "../schemas/restaurantsNearUser.js";
 import getImageUrl from "../helpers/getImageUrl.js";
 
