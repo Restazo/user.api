@@ -7,6 +7,7 @@ import restaurantsRoutes from "./routes/restaurantsRoutes.js";
 import { sendResponse } from "./helpers/responses.js";
 import Status from "./helpers/types/status.js";
 import { Operation } from "./helpers/types/operation.js";
+import deviceRoutes from "./routes/deviceRoutes.js";
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use(
 app.use(express.json());
 
 app.use("/restaurants", restaurantsRoutes);
+app.use("/device_id",  deviceRoutes);
 
 // Respond if none of the endpoints matched
 app.all("*", (req, res, next) => {
