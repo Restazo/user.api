@@ -9,7 +9,7 @@ import {
   RestaurantNearUser,
   ProcessedRestaurantElement,
 } from "../helpers/types/restaurantData.js";
-import { RestaurantData } from "../schemas/restaurantNearYouElement.js";
+import RestaurantsNearUser from "../schemas/restaurantsNearUser.js";
 import getImageUrl from "../helpers/getImageUrl.js";
 
 const defaultRange = Number(process.env.DEFAULT_RANGE);
@@ -72,37 +72,20 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
       [userLatitude, userLongitude, rangeKm]
     );
 
-    // Validate each restaurant element from the database query
-    const result: ProcessedRestaurantElement[] = rows.reduce(
-      (
-        acc: ProcessedRestaurantElement[],
-        restaurantElement: RestaurantNearUser
-      ) => {
-        // Validate with the schema
-        const validatedRestaurantElement =
-          RestaurantData.safeParse(restaurantElement);
+    const dbResultValid = RestaurantsNearUser.safeParse(rows);
 
-        // Don't add just validated element if its validation failed
-        // and log an error
-        if (!validatedRestaurantElement.success) {
-          logError(
-            "Restaurant near user returned from database failed validation"
-          );
-          return acc;
-        }
+    if (!dbResultValid.success) {
+      return sendResponse(res, "Something went wrong", Operation.ServerError);
+    }
 
-        // Add an element to accumulator with modified images and distance
-        acc.push({
-          ...restaurantElement,
-          coverImage: getImageUrl(restaurantElement.coverImage),
-          logoImage: getImageUrl(restaurantElement.logoImage),
-          distanceKm: restaurantElement.distanceKm.toFixed(1),
-        });
-
-        return acc;
-      },
-      []
-    );
+    const result = rows.map((element) => {
+      return {
+        ...element,
+        coverImage: getImageUrl(element.coverImage),
+        logoImage: getImageUrl(element.logoImage),
+        distanceKm: element.distanceKm.toFixed(1),
+      };
+    });
 
     // Send a successful response with result
     sendResponse(
