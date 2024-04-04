@@ -1,6 +1,10 @@
 import { Response, response } from "express";
-import Status from "./types/status.js";
-import { Operation, statusCodeMap } from "./types/operation.js";
+import {
+  Operation,
+  Status,
+  statusCodeMap,
+  statusMap,
+} from "./types/responseMaps.js";
 
 class ResponseBody {
   status: Status;
@@ -16,12 +20,12 @@ class ResponseBody {
 
 export const sendResponse = async (
   res: Response,
-  status: Status,
   message: string,
   operation: Operation,
   data?: object
 ): Promise<Response> => {
   const statusCode = statusCodeMap[operation];
+  const status = statusMap[operation];
   const resBody = new ResponseBody(status, message, data);
 
   return res.status(statusCode).json(resBody);

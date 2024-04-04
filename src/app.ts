@@ -5,8 +5,7 @@ import "./config.js";
 
 import restaurantsRoutes from "./routes/restaurantsRoutes.js";
 import { sendResponse } from "./helpers/responses.js";
-import Status from "./helpers/types/status.js";
-import { Operation } from "./helpers/types/operation.js";
+import { Operation } from "./helpers/types/responseMaps.js";
 
 const app = express();
 
@@ -30,7 +29,6 @@ app.use("/restaurants", restaurantsRoutes);
 app.all("*", (req, res, next) => {
   sendResponse(
     res,
-    Status.Fail,
     `No ${req.method} method for ${req.originalUrl} route on the server`,
     Operation.NotFound
   );
