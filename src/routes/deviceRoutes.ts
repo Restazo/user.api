@@ -1,9 +1,8 @@
-import { getDeviceIdAndKey } from "../controllers/deviceController.js";
+import { getDeviceId } from "../controllers/deviceController.js";
 import { Router } from "express";
-
 
 const router = Router();
 
-router.get("/", getDeviceIdAndKey);
+router.get("/", getDeviceId);
 
 export default router;

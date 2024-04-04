@@ -1,38 +1,20 @@
-import { Request, Response } from "express";
-import { v4 as uuidv4 } from "uuid";
-import crypto from "crypto";
+import { Request, response, Response } from "express";
+import db from "../db.js";
+import { sendResponse } from "../helpers/responses.js";
+import { Operation } from "../helpers/types/responseMaps.js";
 
-export const getDeviceIdAndKey = async (req: Request, res: Response) => {
+export const getDeviceId = async (req: Request, res: Response) => {
   try {
-    // Generate a new UUID for the device ID
-    const deviceId = uuidv4();
+    const insertQuery = "INSERT INTO device DEFAULT VALUES RETURNING id;";
+    const result = await db.query(insertQuery);
 
-    // Generate a random secure key for the device
-    const key = crypto.randomBytes(32).toString("hex");
+    const newDeviceId = result.rows[0].id;
 
-    res.json({
-      deviceId: deviceId,
-      key: key,
+    sendResponse(res, "Successful generating device ID:", Operation.Created, {
+      deviceId: newDeviceId,
     });
   } catch (error) {
-    console.error("Error generating device ID and key:", error);
-    res.status(500).send("Failed to generate device ID and key");
+    console.error("Error generating new device ID:", error);
+    sendResponse(res, "Error generating new device ID", Operation.ServerError);
   }
 };
-
-// import { Request, Response } from "express";
-// import db from "../db.js";
-
-// export const getDeviceId = async (req: Request, res: Response) => {
-//   try {
-//     const insertQuery = "INSERT INTO device DEFAULT VALUES RETURNING id;";
-//     const result = await db.query(insertQuery);
-
-//     const newDeviceId = result.rows[0].id;
-
-//     res.json({ deviceId: newDeviceId });
-//   } catch (error) {
-//     console.error("Error generating new device ID:", error);
-//     res.status(500).send("Failed to generate a new device ID");
-//   }
-// };
