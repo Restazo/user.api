@@ -12,6 +12,12 @@ export enum Operation {
   ServiceUnavailable = "serviceUnavailable",
 }
 
+export enum Status {
+  Success = "success",
+  Fail = "fail",
+  Error = "error",
+}
+
 export const statusCodeMap: { [key in Operation]: number } = {
   ok: 200,
   created: 201,
@@ -24,4 +30,18 @@ export const statusCodeMap: { [key in Operation]: number } = {
   conflict: 409,
   serverError: 500,
   serviceUnavailable: 503,
+};
+
+export const statusMap: { [key in Operation]: Status } = {
+  ok: Status.Success,
+  created: Status.Success,
+  noContent: Status.Success,
+  badRequest: Status.Fail,
+  unauthorized: Status.Fail,
+  forbidden: Status.Fail,
+  notFound: Status.Fail,
+  notAllowed: Status.Fail,
+  conflict: Status.Fail,
+  serverError: Status.Error,
+  serviceUnavailable: Status.Error,
 };
