@@ -1,6 +1,6 @@
 {
   "name": "user.api",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "API implementation for Restazo user mobile application",
   "main": "app.ts",
@@ -30,6 +30,7 @@
     "@types/node": "^20.11.30",
     "@types/pg": "^8.11.3",
     "concurrently": "^8.2.2",
+    "morgan": "^1.10.0",
     "nodemon": "^3.1.0",
     "typescript": "^5.4.2"
   }
