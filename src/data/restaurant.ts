@@ -4,7 +4,7 @@ import { Menu, ExtendedAddress, Restaurant } from "../schemas/types.js";
 import {
   MenuSchema,
   ExtendedAddressSchema,
-  RestaurantSchema,
+  RestaurantOverviewBaseSchema,
 } from "../schemas/schemas.js";
 
 export const getRestaurantById = async (
@@ -14,14 +14,12 @@ export const getRestaurantById = async (
     const existingRestaurant = await pool.query(
       `SELECT
        id,
-       business_id AS "businessId",
        name,
        description,
        affordability,
        logo_file_path AS "logoImage",
-       cover_file_path AS "coverImage",
-       listed
-      FROM restaurant WHERE id = $1`,
+       cover_file_path AS "coverImage"
+      FROM restaurant WHERE id = $1 AND listed = true`,
       [id]
     );
 
@@ -39,7 +37,7 @@ export const getRestaurantById = async (
     }
 
     // Validate restaurant before returning it
-    RestaurantSchema.parse(restaurant);
+    RestaurantOverviewBaseSchema.parse(restaurant);
 
     return restaurant;
   } catch (error) {

@@ -12,15 +12,13 @@ export const ExtendedAddressSchema = AddressSchema.extend({
   longitude: z.string().min(1),
 });
 
-export const RestaurantSchema = z.object({
+export const RestaurantOverviewBaseSchema = z.object({
   id: z.string().uuid().min(1),
-  businessId: z.string().min(1).uuid(),
   name: z.string().min(1),
   description: z.string().nullable(),
   affordability: z.number().nullable(),
   logoImage: z.string().nullable(),
   coverImage: z.string().nullable(),
-  listed: z.boolean(),
 });
 
 export const MenuItemSchema = z.object({
@@ -48,7 +46,7 @@ export const RestaurantOverviewReqSchema = z.object({
 });
 
 export const RestaurantOverviewResSchema = z.object({
-  restaurant: RestaurantSchema.extend({
+  restaurant: RestaurantOverviewBaseSchema.extend({
     address: ExtendedAddressSchema,
     menu: MenuSchema,
   }),
