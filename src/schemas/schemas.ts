@@ -1,10 +1,10 @@
 import * as z from "zod";
 
 export const AddressSchema = z.object({
-  address_line: z.string().min(1),
+  addressLine: z.string().min(1),
   city: z.string().min(1),
-  postal_code: z.string().min(1),
-  country_code: z.string().min(1),
+  postalCode: z.string().min(1),
+  countryCode: z.string().min(1),
 });
 
 export const ExtendedAddressSchema = AddressSchema.extend({

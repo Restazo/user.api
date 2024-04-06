@@ -51,7 +51,7 @@ export const getRestaurantAddressById = async (
 ): Promise<ExtendedAddress | null> => {
   try {
     const existingAddress = await pool.query(
-      "SELECT address_line, city, postal_code, country_code, latitude, longitude FROM restaurant_address WHERE restaurant_id = $1",
+      `SELECT address_line as "addressLine", city, postal_code as "postalCode", country_code as "countryCode", latitude, longitude FROM restaurant_address WHERE restaurant_id = $1`,
       [id]
     );
 
