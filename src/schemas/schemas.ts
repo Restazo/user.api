@@ -10,6 +10,13 @@ export const AddressSchema = z.object({
 export const ExtendedAddressSchema = AddressSchema.extend({
   latitude: z.string().min(1),
   longitude: z.string().min(1),
+  distanceKm: z.string().min(1),
+});
+
+export const RawExtendedAddressSchema = AddressSchema.extend({
+  latitude: z.string().min(1),
+  longitude: z.string().min(1),
+  distanceKm: z.number().positive(),
 });
 
 export const RestaurantOverviewBaseSchema = z.object({

@@ -5,6 +5,7 @@ import {
   MenuSchema,
   ExtendedAddressSchema,
   RestaurantOverviewBaseSchema,
+  RawExtendedAddressSchema,
 } from "../schemas/schemas.js";
 
 export const getRestaurantById = async (
@@ -47,19 +48,40 @@ export const getRestaurantById = async (
 };
 
 export const getRestaurantAddressById = async (
-  id: string
+  id: string,
+  lat: string,
+  lon: string
 ): Promise<ExtendedAddress | null> => {
   try {
     const existingAddress = await pool.query(
-      `SELECT address_line as "addressLine", city, postal_code as "postalCode", country_code as "countryCode", latitude, longitude FROM restaurant_address WHERE restaurant_id = $1`,
-      [id]
+      `SELECT 
+      address_line as "addressLine",
+      city,
+      postal_code as "postalCode",
+      country_code as "countryCode",
+      latitude,
+      longitude,
+      (6371 * acos(cos(radians($2)) * cos(radians(latitude)) * cos(radians(longitude) - radians($3)) 
+      + sin(radians($2)) * sin(radians(latitude)))) AS "distanceKm"
+       FROM 
+      restaurant_address
+       WHERE
+      restaurant_id = $1`,
+      [id, lat, lon]
     );
 
     if (existingAddress.rows.length === 0) {
       return null;
     }
 
-    const address = existingAddress.rows[0];
+    let address = existingAddress.rows[0];
+
+    RawExtendedAddressSchema.parse(address);
+
+    address = {
+      ...address,
+      distanceKm: address.distanceKm.toFixed(1),
+    };
 
     // Parse address before returning
     ExtendedAddressSchema.parse(address);

@@ -11,16 +11,20 @@ import {
   getRestaurantById,
   getRestaurantMenuByRestaurantId,
 } from "../data/restaurant.js";
-
 import restaurantsNearYouSchema from "../schemas/restaurantsNearYouReq.js";
 import {
   RestaurantOverviewReqSchema,
   RestaurantOverviewResSchema,
 } from "../schemas/schemas.js";
+import restaurantOverviewQueryParamsSchema from "../schemas/restaurantOverviewQueryParams.js";
+import convertIntoNumbers from "../helpers/convertIntoNumers.js";
 
 const defaultRange = Number(process.env.DEFAULT_RANGE);
 const defaultLatitude = Number(process.env.DEFAULT_LAT);
 const defaultLongitude = Number(process.env.DEFAULT_LON);
+const rangeQueryName = process.env.RANGE_QUERY_NAME;
+const userLongitudeQueryName = process.env.USER_LONGITUDE_QUERY_NAME;
+const userLatitudeQueryName = process.env.USER_LATITUDE_QUERY_NAME;
 
 export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   const validatedRequest = restaurantsNearYouSchema.safeParse(req.query);
@@ -29,26 +33,41 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
     return sendResponse(res, "Invalid request", Operation.BadRequest);
   }
 
-  // Convert all the query values into numbers
-  const rangeKm = validatedRequest.data.range_km
-    ? Number(validatedRequest.data.range_km)
-    : defaultRange;
-  const userLatitude =
-    validatedRequest.data.user_lat && validatedRequest.data.user_lon
-      ? Number(validatedRequest.data.user_lat)
-      : defaultLatitude;
-  const userLongitude =
-    validatedRequest.data.user_lat && validatedRequest.data.user_lon
-      ? Number(validatedRequest.data.user_lon)
-      : defaultLongitude;
+  let valuesToConvert: Map<string, any> = new Map();
 
-  if (
-    Number.isNaN(userLatitude) ||
-    Number.isNaN(rangeKm) ||
-    Number.isNaN(userLongitude) ||
-    rangeKm <= 0
-  ) {
+  valuesToConvert.set(
+    rangeQueryName,
+    validatedRequest.data.range_km
+      ? validatedRequest.data.range_km
+      : defaultRange
+  );
+
+  valuesToConvert.set(
+    userLatitudeQueryName,
+    validatedRequest.data.user_lat
+      ? validatedRequest.data.user_lat
+      : defaultLatitude
+  );
+
+  valuesToConvert.set(
+    userLongitudeQueryName,
+    validatedRequest.data.user_lon
+      ? validatedRequest.data.user_lon
+      : defaultLongitude
+  );
+
+  const convertedValues: Map<string, number> | null =
+    convertIntoNumbers(valuesToConvert);
+
+  if (!convertedValues) {
     return sendResponse(res, "Invalid query values", Operation.BadRequest);
+  }
+
+  const userLatitude = convertedValues.get(userLatitudeQueryName);
+  const userLongitude = convertedValues.get(userLongitudeQueryName);
+  const rangeKm = convertedValues.get(rangeQueryName);
+  if (!userLatitude || !userLongitude || !rangeKm) {
+    return sendResponse(res, "Something went wrong", Operation.ServerError);
   }
 
   try {
@@ -94,9 +113,10 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
     });
 
     // Send a successful response with result
-    sendResponse(
+    return sendResponse(
       res,
-      `Restaurants near you within ${rangeKm}km range`,
+      `Restaurants near you within 100km range`,
+      // `Restaurants near you within ${rangeKm}km range`,
       Operation.Ok,
       result
     );
@@ -105,9 +125,9 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
     logError("Failed to fetch user closest restaurants", error);
 
     // Send an error response back to the client
-    sendResponse(
+    return sendResponse(
       res,
-      "We are having some problems with looking for restaurants near you",
+      "Something went wrong with looking for restaurants near you",
       Operation.ServerError
     );
   }
@@ -115,26 +135,64 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
 
 export const getRestaurantOverview = async (req: Request, res: Response) => {
   try {
-    const validatedRequest = RestaurantOverviewReqSchema.safeParse(req.params);
+    const validatedQueryParams = restaurantOverviewQueryParamsSchema.safeParse(
+      req.query
+    );
+    const validatedParams = RestaurantOverviewReqSchema.safeParse(req.params);
 
-    if (!validatedRequest.success) {
+    if (!validatedParams.success || !validatedQueryParams.success) {
       return sendResponse(res, "Invalid request", Operation.BadRequest);
     }
 
-    const { restaurantId } = validatedRequest.data;
+    let valuesToConvert: Map<string, any> = new Map();
+
+    valuesToConvert.set(
+      userLatitudeQueryName,
+      validatedQueryParams.data.user_lat
+        ? validatedQueryParams.data.user_lat
+        : defaultLatitude
+    );
+
+    valuesToConvert.set(
+      userLongitudeQueryName,
+      validatedQueryParams.data.user_lon
+        ? validatedQueryParams.data.user_lon
+        : defaultLongitude
+    );
+
+    const convertedValues: Map<string, number> | null =
+      convertIntoNumbers(valuesToConvert);
+
+    if (!convertedValues) {
+      return sendResponse(res, "Invalid query values", Operation.BadRequest);
+    }
+
+    const userLatitude = convertedValues.get(userLatitudeQueryName)?.toString();
+    const userLongitude = convertedValues
+      .get(userLongitudeQueryName)
+      ?.toString();
+    if (!userLatitude || !userLongitude) {
+      return sendResponse(res, "Something went wrong", Operation.ServerError);
+    }
+
+    const { restaurantId } = validatedParams.data;
 
     const restaurantData = await getRestaurantById(restaurantId);
 
     if (!restaurantData) {
-      return sendResponse(res, "No data found", Operation.NotFound);
+      return sendResponse(res, "Restaurant not found", Operation.NotFound);
     }
 
-    const restaurantAddressData = await getRestaurantAddressById(restaurantId);
+    const restaurantAddressData = await getRestaurantAddressById(
+      restaurantId,
+      userLatitude,
+      userLongitude
+    );
 
     const menuData = await getRestaurantMenuByRestaurantId(restaurantId);
 
     if (!menuData || !restaurantAddressData) {
-      return sendResponse(res, "No data found", Operation.NotFound);
+      return sendResponse(res, "No restaurant data found", Operation.NotFound);
     }
 
     const resData = {
@@ -157,7 +215,7 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
     logError("Failed to fetch restaurant overview data", error);
     return sendResponse(
       res,
-      "An error occurred while fetching data",
+      "Something went wrong with looking for a restaurant",
       Operation.ServerError
     );
   }
