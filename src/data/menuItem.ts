@@ -7,6 +7,7 @@ export const getMenuItemById = async (id: string) => {
     const result = await pool.query(
       `SELECT 
         id,
+        name,
         category_id as "categoryId",
         image,
         description,
