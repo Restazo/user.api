@@ -47,7 +47,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   );
 
   valuesToConvert.set(
-    "user_lat",
+    "user_lon",
     validatedRequest.data.user_lon
       ? validatedRequest.data.user_lon
       : defaultLongitude
@@ -61,7 +61,7 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   }
 
   const userLatitude = convertedValues.get("user_lat");
-  const userLongitude = convertedValues.get("user_lat");
+  const userLongitude = convertedValues.get("user_lon");
   const rangeKm = convertedValues.get("range_km");
   if (!userLatitude || !userLongitude || !rangeKm) {
     return sendResponse(res, "Something went wrong", Operation.ServerError);
@@ -151,7 +151,7 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
     );
 
     valuesToConvert.set(
-      "user_lat",
+      "user_lon",
       validatedQueryParams.data.user_lon
         ? validatedQueryParams.data.user_lon
         : defaultLongitude
@@ -165,7 +165,7 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
     }
 
     const userLatitude = convertedValues.get("user_lat")?.toString();
-    const userLongitude = convertedValues.get("user_lat")?.toString();
+    const userLongitude = convertedValues.get("user_lon")?.toString();
     if (!userLatitude || !userLongitude) {
       return sendResponse(res, "Something went wrong", Operation.ServerError);
     }

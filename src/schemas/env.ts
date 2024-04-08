@@ -14,7 +14,4 @@ export const EnvSchema = z.object({
   DEFAULT_LAT: z.string().min(1),
   DEFAULT_LON: z.string().min(1),
   RESTAURANTS_ENDPOINTS_ROOT: z.string().min(1),
-  USER_LATITUDE_QUERY_NAME: z.string().min(1),
-  USER_LONGITUDE_QUERY_NAME: z.string().min(1),
-  RANGE_QUERY_NAME: z.string().min(1),
 });
