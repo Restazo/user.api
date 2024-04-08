@@ -3,8 +3,9 @@ import { Request, Response } from "express";
 import pool from "../db.js";
 import { sendResponse } from "../helpers/responses.js";
 import logError from "../helpers/logger.js";
-import Status from "../helpers/types/status.js";
-import { Operation } from "../helpers/types/operation.js";
+import { Operation } from "../helpers/types/responseMaps.js";
+import RestaurantsNearUser from "../schemas/restaurantsNearUser.js";
+import getImageUrl from "../helpers/getImageUrl.js";
 import {
   getRestaurantAddressById,
   getRestaurantById,
@@ -25,17 +26,12 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   const validatedRequest = restaurantsNearYouSchema.safeParse(req.query);
 
   if (!validatedRequest.success) {
-    return sendResponse(
-      res,
-      Status.Fail,
-      "Invalid request",
-      Operation.BadRequest
-    );
+    return sendResponse(res, "Invalid request", Operation.BadRequest);
   }
 
   // Convert all the query values into numbers
-  const range = validatedRequest.data.range
-    ? Number(validatedRequest.data.range)
+  const rangeKm = validatedRequest.data.range_km
+    ? Number(validatedRequest.data.range_km)
     : defaultRange;
   const userLatitude =
     validatedRequest.data.user_lat && validatedRequest.data.user_lon
@@ -48,15 +44,11 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
 
   if (
     Number.isNaN(userLatitude) ||
-    Number.isNaN(range) ||
-    Number.isNaN(userLongitude)
+    Number.isNaN(rangeKm) ||
+    Number.isNaN(userLongitude) ||
+    rangeKm <= 0
   ) {
-    return sendResponse(
-      res,
-      Status.Fail,
-      "Invalid query values",
-      Operation.BadRequest
-    );
+    return sendResponse(res, "Invalid query values", Operation.BadRequest);
   }
 
   try {
@@ -65,13 +57,14 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
       r.id, 
       r.name,
       r.cover_file_path as "coverImage",
+      r.logo_file_path as "logoImage",
       r.description,
       r.affordability,
       ra.latitude, 
       ra.longitude,
       ra.address_line as "addressLine",
       (6371 * acos(cos(radians($1)) * cos(radians(ra.latitude)) * cos(radians(ra.longitude) - radians($2)) 
-      + sin(radians($1)) * sin(radians(ra.latitude)))) AS distance_km
+      + sin(radians($1)) * sin(radians(ra.latitude)))) AS "distanceKm"
       FROM 
           restaurant r
       INNER JOIN 
@@ -80,24 +73,41 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
           (6371 * acos(cos(radians($1)) * cos(radians(ra.latitude)) * cos(radians(ra.longitude) - radians($2)) 
           + sin(radians($1)) * sin(radians(ra.latitude)))) <= $3 AND r.listed = true
       ORDER BY
-        distance_km;
+          "distanceKm";
       `,
-      [userLatitude, userLongitude, range]
+      [userLatitude, userLongitude, rangeKm]
     );
 
+    const dbResultValid = RestaurantsNearUser.safeParse(rows);
+
+    if (!dbResultValid.success) {
+      return sendResponse(res, "Something went wrong", Operation.ServerError);
+    }
+
+    const result = rows.map((element) => {
+      return {
+        ...element,
+        coverImage: getImageUrl(element.coverImage),
+        logoImage: getImageUrl(element.logoImage),
+        distanceKm: element.distanceKm.toFixed(1),
+      };
+    });
+
+    // Send a successful response with result
     sendResponse(
       res,
-      Status.Success,
-      `Restaurants near you within the range of ${range}km`,
+      `Restaurants near you within ${rangeKm}km range`,
       Operation.Ok,
-      rows
+      result
     );
   } catch (error: any) {
+    // Log caught error
     logError("Failed to fetch user closest restaurants", error);
+
+    // Send an error response back to the client
     sendResponse(
       res,
-      Status.Error,
-      "An error occurred while fetching data",
+      "We are having some problems with looking for restaurants near you",
       Operation.ServerError
     );
   }
@@ -108,12 +118,7 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
     const validatedRequest = RestaurantOverviewReqSchema.safeParse(req.params);
 
     if (!validatedRequest.success) {
-      return sendResponse(
-        res,
-        Status.Fail,
-        "Invalid request",
-        Operation.BadRequest
-      );
+      return sendResponse(res, "Invalid request", Operation.BadRequest);
     }
 
     const { restaurantId } = validatedRequest.data;
@@ -121,12 +126,7 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
     const restaurantData = await getRestaurantById(restaurantId);
 
     if (!restaurantData) {
-      return sendResponse(
-        res,
-        Status.Fail,
-        "No data found",
-        Operation.NotFound
-      );
+      return sendResponse(res, "No data found", Operation.NotFound);
     }
 
     const restaurantAddressData = await getRestaurantAddressById(restaurantId);
@@ -134,12 +134,7 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
     const menuData = await getRestaurantMenuByRestaurantId(restaurantId);
 
     if (!menuData || !restaurantAddressData) {
-      return sendResponse(
-        res,
-        Status.Fail,
-        "No data found",
-        Operation.NotFound
-      );
+      return sendResponse(res, "No data found", Operation.NotFound);
     }
 
     const resData = {
@@ -154,7 +149,6 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
 
     return sendResponse(
       res,
-      Status.Success,
       `Restaurant overview`,
       Operation.Ok,
       validatedResData
@@ -163,8 +157,7 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
     logError("Failed to fetch restaurant overview data", error);
     return sendResponse(
       res,
-      Status.Error,
-      "An error occurred while fetching data",
+      "We are having some problems with looking for restaurants near you",
       Operation.ServerError
     );
   }
