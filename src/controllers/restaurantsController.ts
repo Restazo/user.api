@@ -22,9 +22,6 @@ import convertIntoNumbers from "../helpers/convertIntoNumers.js";
 const defaultRange = Number(process.env.DEFAULT_RANGE);
 const defaultLatitude = Number(process.env.DEFAULT_LAT);
 const defaultLongitude = Number(process.env.DEFAULT_LON);
-const rangeQueryName = process.env.RANGE_QUERY_NAME;
-const userLongitudeQueryName = process.env.USER_LONGITUDE_QUERY_NAME;
-const userLatitudeQueryName = process.env.USER_LATITUDE_QUERY_NAME;
 
 export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   const validatedRequest = restaurantsNearYouSchema.safeParse(req.query);
@@ -36,21 +33,21 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
   let valuesToConvert: Map<string, any> = new Map();
 
   valuesToConvert.set(
-    rangeQueryName,
+    "range_km",
     validatedRequest.data.range_km
       ? validatedRequest.data.range_km
       : defaultRange
   );
 
   valuesToConvert.set(
-    userLatitudeQueryName,
+    "user_lat",
     validatedRequest.data.user_lat
       ? validatedRequest.data.user_lat
       : defaultLatitude
   );
 
   valuesToConvert.set(
-    userLongitudeQueryName,
+    "user_lat",
     validatedRequest.data.user_lon
       ? validatedRequest.data.user_lon
       : defaultLongitude
@@ -63,9 +60,9 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
     return sendResponse(res, "Invalid query values", Operation.BadRequest);
   }
 
-  const userLatitude = convertedValues.get(userLatitudeQueryName);
-  const userLongitude = convertedValues.get(userLongitudeQueryName);
-  const rangeKm = convertedValues.get(rangeQueryName);
+  const userLatitude = convertedValues.get("user_lat");
+  const userLongitude = convertedValues.get("user_lat");
+  const rangeKm = convertedValues.get("range_km");
   if (!userLatitude || !userLongitude || !rangeKm) {
     return sendResponse(res, "Something went wrong", Operation.ServerError);
   }
@@ -147,14 +144,14 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
     let valuesToConvert: Map<string, any> = new Map();
 
     valuesToConvert.set(
-      userLatitudeQueryName,
+      "user_lat",
       validatedQueryParams.data.user_lat
         ? validatedQueryParams.data.user_lat
         : defaultLatitude
     );
 
     valuesToConvert.set(
-      userLongitudeQueryName,
+      "user_lat",
       validatedQueryParams.data.user_lon
         ? validatedQueryParams.data.user_lon
         : defaultLongitude
@@ -167,10 +164,8 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
       return sendResponse(res, "Invalid query values", Operation.BadRequest);
     }
 
-    const userLatitude = convertedValues.get(userLatitudeQueryName)?.toString();
-    const userLongitude = convertedValues
-      .get(userLongitudeQueryName)
-      ?.toString();
+    const userLatitude = convertedValues.get("user_lat")?.toString();
+    const userLongitude = convertedValues.get("user_lat")?.toString();
     if (!userLatitude || !userLongitude) {
       return sendResponse(res, "Something went wrong", Operation.ServerError);
     }
