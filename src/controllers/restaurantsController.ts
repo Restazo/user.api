@@ -7,6 +7,8 @@ import logError from "../helpers/logger.js";
 import { Operation } from "../helpers/types/responseMaps.js";
 import RestaurantsNearUser from "../schemas/restaurantsNearUser.js";
 import getImageUrl from "../helpers/getImageUrl.js";
+import MenuItemReq from "../schemas/menuItemReq.js";
+import { getMenuItemById } from "../data/menuItem.js";
 
 const defaultRange = Number(process.env.DEFAULT_RANGE);
 const defaultLatitude = Number(process.env.DEFAULT_LAT);
@@ -98,6 +100,35 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
     sendResponse(
       res,
       "We are having some problems with looking for restaurants near you",
+      Operation.ServerError
+    );
+  }
+};
+
+export const getMenuItem = async (req: Request, res: Response) => {
+  const validatedRequestParams = MenuItemReq.safeParse(req.params);
+
+  if (!validatedRequestParams.success) {
+    return sendResponse(res, "Invalid request", Operation.BadRequest);
+  }
+  try {
+    const itemData = await getMenuItemById(validatedRequestParams.data.itemId);
+
+    if (!itemData) {
+      return sendResponse(res, "No menu item data found", Operation.NotFound);
+    }
+
+    sendResponse(
+      res,
+      `Menu item data with id: ${validatedRequestParams.data.itemId}`,
+      Operation.Ok,
+      itemData
+    );
+  } catch (error) {
+    logError("Failed to get menu item data", error);
+    return sendResponse(
+      res,
+      "Failed to get menu item data",
       Operation.ServerError
     );
   }
