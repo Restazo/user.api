@@ -1,26 +1,31 @@
 import * as z from "zod";
 
 export const AddressSchema = z.object({
-  address_line: z.string().min(1),
+  addressLine: z.string().min(1),
   city: z.string().min(1),
-  postal_code: z.string().min(1),
-  country_code: z.string().min(1),
+  postalCode: z.string().min(1),
+  countryCode: z.string().min(1),
 });
 
 export const ExtendedAddressSchema = AddressSchema.extend({
   latitude: z.string().min(1),
   longitude: z.string().min(1),
+  distanceKm: z.string().min(1),
 });
 
-export const RestaurantSchema = z.object({
+export const RawExtendedAddressSchema = AddressSchema.extend({
+  latitude: z.string().min(1),
+  longitude: z.string().min(1),
+  distanceKm: z.number().min(0),
+});
+
+export const RestaurantOverviewBaseSchema = z.object({
   id: z.string().uuid().min(1),
-  businessId: z.string().min(1).uuid(),
   name: z.string().min(1),
   description: z.string().nullable(),
   affordability: z.number().nullable(),
   logoImage: z.string().nullable(),
   coverImage: z.string().nullable(),
-  listed: z.boolean(),
 });
 
 export const MenuItemSchema = z.object({
@@ -48,7 +53,7 @@ export const RestaurantOverviewReqSchema = z.object({
 });
 
 export const RestaurantOverviewResSchema = z.object({
-  restaurant: RestaurantSchema.extend({
+  restaurant: RestaurantOverviewBaseSchema.extend({
     address: ExtendedAddressSchema,
     menu: MenuSchema,
   }),

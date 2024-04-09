@@ -23,7 +23,7 @@ app.use(
 
 app.use(express.json());
 
-app.use("/restaurants", restaurantsRoutes);
+app.use(process.env.RESTAURANTS_ENDPOINTS_ROOT, restaurantsRoutes);
 
 // Respond if none of the endpoints matched
 app.all("*", (req, res, next) => {
