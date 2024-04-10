@@ -12,7 +12,7 @@ const RestaurantsNearUser = z.array(
       latitude: z.string().min(1),
       longitude: z.string().min(1),
       addressLine: z.string().min(1),
-      distanceKm: z.number().positive(),
+      distanceKm: z.number().min(0),
     })
     .strict()
 );
