@@ -24,7 +24,7 @@ app.use(
 
 app.use(express.json());
 
-app.use("/restaurants", restaurantsRoutes);
+app.use(process.env.RESTAURANTS_ENDPOINTS_ROOT, restaurantsRoutes);
 app.use("/device_id",  deviceRoutes);
 
 // Respond if none of the endpoints matched
