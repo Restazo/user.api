@@ -14,4 +14,6 @@ export const EnvSchema = z.object({
   DEFAULT_LAT: z.string().min(1),
   DEFAULT_LON: z.string().min(1),
   RESTAURANTS_ENDPOINTS_ROOT: z.string().min(1),
+  RESEND_API_KEY: z.string().min(1),
+  DEFAULT_PIN_VALIDITY_PERIOD: z.string().min(1),
 });
