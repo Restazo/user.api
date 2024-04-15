@@ -16,4 +16,8 @@ export const EnvSchema = z.object({
   RESTAURANTS_ENDPOINTS_ROOT: z.string().min(1),
   RESEND_API_KEY: z.string().min(1),
   DEFAULT_PIN_VALIDITY_PERIOD: z.string().min(1),
+  REFRESH_TOKEN_SECRET: z.string().min(1),
+  ACCESS_TOKEN_SECRET: z.string().min(1),
+  ACCESS_TOKEN_EXPIRY: z.string().min(1),
+  REFRESH_TOKEN_EXPIRY: z.string().min(1),
 });

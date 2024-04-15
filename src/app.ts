@@ -5,7 +5,7 @@ import "./config.js";
 
 import restaurantsRoutes from "./routes/restaurantsRoutes.js";
 import { sendResponse } from "./helpers/responses.js";
-import { Operation } from "./helpers/types/responseMaps.js";
+import { Operation } from "./schemas/types/responseMaps.js";
 import deviceRoutes from "./routes/deviceRoutes.js";
 import waiterRoutes from "./routes/waiterRoutes.js";
 

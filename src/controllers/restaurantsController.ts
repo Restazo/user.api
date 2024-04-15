@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import pool from "../db.js";
 import { sendResponse } from "../helpers/responses.js";
 import logError from "../helpers/logger.js";
-import { Operation } from "../helpers/types/responseMaps.js";
+import { Operation } from "../schemas/types/responseMaps.js";
 import RestaurantsNearUser from "../schemas/restaurantsNearUser.js";
 import getImageUrl from "../helpers/getImageUrl.js";
 import {

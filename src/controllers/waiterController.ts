@@ -2,18 +2,25 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 
 import { sendResponse } from "../helpers/responses.js";
-import { Operation } from "../helpers/types/responseMaps.js";
+import { Operation } from "../schemas/types/responseMaps.js";
 import waiterLogInReq from "../schemas/waiterLogInReq.js";
 import pool from "../db.js";
 import {
   getWaiterByEmail,
-  getWaiterConfirmationFieldsByEmail,
-  resetWaiterConfirmationFields,
+  getFullWaiterData,
+  logInTheWaiter,
+  resetWaiterConfirmationDetails,
   setWaiterConfirmationPin,
+  deleteWaiterRefreshToken,
 } from "../data/waiter.js";
 import logger from "../helpers/logger.js";
 import { generatePin } from "../helpers/generatePin.js";
-import { resend, confirmationEmail } from "../resend.js";
+import sendConfirmationEmail from "../helpers/sendConfirmationEmail.js";
+import { signTokens } from "../helpers/jwtTools.js";
+
+export const confirmationPinValidityPeriod = Number(
+  process.env.DEFAULT_PIN_VALIDITY_PERIOD
+);
 
 export const waiterLogIn = async (req: Request, res: Response) => {
   const validatedReq = waiterLogInReq.safeParse(req.body);
@@ -21,30 +28,34 @@ export const waiterLogIn = async (req: Request, res: Response) => {
   if (!validatedReq.success) {
     return sendResponse(res, "Invalid request body", Operation.BadRequest);
   }
+
+  const client = await pool.connect();
   try {
-    const waiterData = await getWaiterByEmail(validatedReq.data.email);
+    await client.query("BEGIN");
+    const waiterData = await getWaiterByEmail(validatedReq.data.email, client);
 
     if (
       !waiterData ||
       !(await bcrypt.compare(validatedReq.data.pin, waiterData.pin))
     ) {
+      await client.query("ROLLBACK");
+
       return sendResponse(res, "Invalid credentials", Operation.BadRequest);
     }
 
     const confirmationPin = generatePin();
 
     const hashedPin = await bcrypt.hash(confirmationPin.toString(), 10);
-    await setWaiterConfirmationPin(hashedPin, validatedReq.data.email);
+    await setWaiterConfirmationPin(hashedPin, validatedReq.data.email, client);
 
-    const { data, error } = await resend.emails.send({
-      from: "Restazo Inc. <confirmations@restazo.com>",
-      to: [waiterData.email],
-      subject: "Hello World",
-      html: confirmationEmail(confirmationPin),
-    });
+    const emailSent = await sendConfirmationEmail(
+      waiterData.email,
+      confirmationPin
+    );
 
-    if (error) {
-      logger(`Failed to send an email to ${waiterData.email}`, error);
+    if (!emailSent) {
+      await client.query("ROLLBACK");
+
       return sendResponse(
         res,
         "Failed to send a confirmation email",
@@ -52,14 +63,20 @@ export const waiterLogIn = async (req: Request, res: Response) => {
       );
     }
 
+    await client.query("COMMIT");
     return sendResponse(
       res,
       "Successful waiter log in, please confirm your email",
       Operation.Ok
     );
   } catch (e) {
+    await client.query("ROLLBACK");
+
     logger("Failed to log in the waiter", e);
+
     return sendResponse(res, "Something went wrong", Operation.ServerError);
+  } finally {
+    client.release();
   }
 };
 
@@ -70,31 +87,69 @@ export const waiterLogInConfirm = async (req: Request, res: Response) => {
     return sendResponse(res, "Invalid request", Operation.BadRequest);
   }
 
+  const client = await pool.connect();
   try {
-    const confirmationData = await getWaiterConfirmationFieldsByEmail(
-      validatedReq.data.email
-    );
+    await client.query("BEGIN");
+
+    const waiterData = await getFullWaiterData(validatedReq.data.email, client);
 
     if (
-      !confirmationData ||
-      !(await bcrypt.compare(
-        validatedReq.data.pin,
-        confirmationData.confirmationPin
-      ))
+      waiterData &&
+      waiterData.minutesDifference >= confirmationPinValidityPeriod
     ) {
+      await resetWaiterConfirmationDetails(validatedReq.data.email, client);
+      await client.query("COMMIT");
+
+      return sendResponse(res, "Expired pin code", Operation.Forbidden);
+    }
+
+    if (
+      !waiterData ||
+      !(await bcrypt.compare(validatedReq.data.pin, waiterData.confirmationPin))
+    ) {
+      await client.query("ROLLBACK");
+
       return sendResponse(res, "Invalid credentials", Operation.BadRequest);
     }
 
-    // generate tokens, set them in db and send to the client
-    await resetWaiterConfirmationFields(validatedReq.data.email);
+    const { accessToken, refreshToken } = signTokens({
+      waiter_id: waiterData.id,
+      restaurant_id: waiterData.restaurantId,
+      waiter_email: waiterData.email,
+    });
 
+    await logInTheWaiter(validatedReq.data.email, refreshToken, client);
+
+    await client.query("COMMIT");
+
+    res.setHeader("Authorization", `Bearer ${accessToken}`);
     return sendResponse(res, "Successful login", Operation.Ok);
   } catch (e) {
+    await client.query("ROLLBACK");
+
     logger("Failed to confirm waiter log in", e);
-    return sendResponse(res, "Something went wrong", Operation.ServerError);
+
+    return sendResponse(res, "Failed to log you in", Operation.ServerError);
+  } finally {
+    client.release();
   }
 };
 
+export const waiterLogOut = async (req: Request, res: Response) => {
+  try {
+    await deleteWaiterRefreshToken(req.waiter.waiter_id);
+
+    return sendResponse(res, "Successful log out", Operation.Ok);
+  } catch (e) {
+    logger("Failed to log out waiter", e);
+    return sendResponse(res, "Failed to log you out", Operation.ServerError);
+  }
+};
+
+// ///////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////
+// ///////////////////////////////////////////////////////////
 export const waiterRegister = async (req: Request, res: Response) => {
   const validatedReq = waiterLogInReq.safeParse(req.body);
 

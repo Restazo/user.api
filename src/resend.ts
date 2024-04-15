@@ -1,3 +1,4 @@
+import { confirmationPinValidityPeriod } from "./controllers/waiterController.js";
 import { Resend } from "resend";
 
 export const resend = new Resend(process.env.RESEND_API_KEY);
@@ -47,12 +48,13 @@ export const confirmationEmail = (pin: number): string => {
   </div>
   <div class="email-content">
     <h2 style="color: #ffffff">Confirm signing in</h2>
-    <p style="color: #ffffff">Let's comlete your signing in, please use the PIN code below.</p>
+    <p style="color: #ffffff">Let's comlete your signing in, please use the PIN code below:</p>
     <!-- PIN Code -->
     <div style="background-color: #ffffff; padding: 5px 5px; border-radius: 10px;">
-      <p style="font-size: 24px; font-weight: bold; color: #000000">${pin}</p>
+      <p style="font-size: 24px; font-weight: bold; color: #000000;">${pin}</p>
     </div>
-    <p style="color: #ffffff">Please paste this PIN code in the waiter login confirmation.</p>
+    <p style="color: #ffffff;">Please paste this PIN code in the waiter login confirmation.</p>
+    <p style="color: #ffffff; font-size: 12px;">PIN code is valid for ${confirmationPinValidityPeriod} minutes.</p>
   </div>
   <div class="email-footer">
     <p style="color: #ffffff">Aleksanterinkatu 48 <br>Oulu, FI 90120</p>
@@ -62,5 +64,3 @@ export const confirmationEmail = (pin: number): string => {
 </html>
 `;
 };
-
-// export default resend;
