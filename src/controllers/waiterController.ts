@@ -129,7 +129,11 @@ export const waiterLogInConfirm = async (req: Request, res: Response) => {
 
     logger("Failed to confirm waiter log in", e);
 
-    return sendResponse(res, "Failed to log you in", Operation.ServerError);
+    return sendResponse(
+      res,
+      "Failed to confirm your logging in",
+      Operation.ServerError
+    );
   } finally {
     client.release();
   }
