@@ -133,6 +133,7 @@ export const renewWaiterRefreshToken = async (
     logger("Failed to renew waiter refresh token", e);
 
     await client.query("ROLLBACK");
+    throw e;
   } finally {
     client.release();
   }

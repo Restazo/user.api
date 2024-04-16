@@ -3,13 +3,10 @@ import jwt from "jsonwebtoken";
 
 import { sendResponse } from "./responses.js";
 import { Operation } from "../schemas/types/responseMaps.js";
-import { TokenType, signTokens, verifyToken } from "./jwtTools.js";
+import { TokenType, verifyToken } from "./jwtTools.js";
 import { authTokensPayload } from "../schemas/authTokens.js";
 import pool from "../db.js";
-import {
-  deleteWaiterRefreshToken,
-  renewWaiterRefreshToken,
-} from "../data/waiter.js";
+import { deleteWaiterRefreshToken } from "../data/waiter.js";
 
 export const protectWaiterRoute = async (
   req: Request,
@@ -41,40 +38,32 @@ export const protectWaiterRoute = async (
   const oldRefreshToken = result.rows[0].refreshToken;
 
   if (oldRefreshToken === null) {
-    return sendResponse(res, "You are logged out", Operation.Forbidden);
+    return sendResponse(
+      res,
+      "You are logged out, please log in",
+      Operation.Forbidden
+    );
   }
 
   const accessTokenValid = verifyToken(accessToken, TokenType.access);
 
   if (accessTokenValid) {
-    if (!req.originalUrl.includes("/logout")) {
-      const { accessToken, refreshToken } = signTokens({
-        waiter_id: accessTokenPayload.waiter_id,
-        waiter_email: accessTokenPayload.waiter_email,
-        restaurant_id: accessTokenPayload.restaurant_id,
-      });
-
-      await renewWaiterRefreshToken(refreshToken, accessTokenPayload.waiter_id);
-    }
-
-    req.waiter = accessTokenPayload;
+    req.waiter = {
+      waiter_id: accessTokenPayload.waiter_id,
+      waiter_email: accessTokenPayload.waiter_email,
+      restaurant_id: accessTokenPayload.restaurant_id,
+    };
     return next();
   }
 
   const refreshTokenValid = verifyToken(oldRefreshToken, TokenType.refresh);
 
   if (refreshTokenValid) {
-    if (!req.originalUrl.includes("/logout")) {
-      const { accessToken, refreshToken } = signTokens({
-        waiter_id: accessTokenPayload.waiter_id,
-        waiter_email: accessTokenPayload.waiter_email,
-        restaurant_id: accessTokenPayload.restaurant_id,
-      });
-
-      await renewWaiterRefreshToken(refreshToken, accessTokenPayload.waiter_id);
-    }
-
-    req.waiter = accessTokenPayload;
+    req.waiter = {
+      waiter_id: accessTokenPayload.waiter_id,
+      waiter_email: accessTokenPayload.waiter_email,
+      restaurant_id: accessTokenPayload.restaurant_id,
+    };
 
     return next();
   }

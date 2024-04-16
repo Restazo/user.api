@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import {
+  renewSession,
   waiterLogIn,
   waiterLogInConfirm,
   waiterLogOut,
@@ -11,8 +12,10 @@ import { protectWaiterRoute } from "../helpers/protect.js";
 const router = Router();
 
 router.post("/login", waiterLogIn);
-router.post("/register", waiterRegister);
 router.post("/confirm", waiterLogInConfirm);
 router.post("/logout", protectWaiterRoute, waiterLogOut);
+router.post("/renew", protectWaiterRoute, renewSession);
+// TODO: delete this route
+router.post("/register", waiterRegister);
 
 export default router;

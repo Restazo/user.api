@@ -12,6 +12,7 @@ import {
   resetWaiterConfirmationDetails,
   setWaiterConfirmationPin,
   deleteWaiterRefreshToken,
+  renewWaiterRefreshToken,
 } from "../data/waiter.js";
 import logger from "../helpers/logger.js";
 import { generatePin } from "../helpers/generatePin.js";
@@ -24,7 +25,6 @@ export const confirmationPinValidityPeriod = Number(
 
 export const waiterLogIn = async (req: Request, res: Response) => {
   const validatedReq = waiterLogInReq.safeParse(req.body);
-
   if (!validatedReq.success) {
     return sendResponse(res, "Invalid request body", Operation.BadRequest);
   }
@@ -146,10 +146,33 @@ export const waiterLogOut = async (req: Request, res: Response) => {
   }
 };
 
+export const renewSession = async (req: Request, res: Response) => {
+  const { accessToken, refreshToken } = signTokens({
+    waiter_id: req.waiter.waiter_id,
+    waiter_email: req.waiter.waiter_email,
+    restaurant_id: req.waiter.restaurant_id,
+  });
+
+  try {
+    await renewWaiterRefreshToken(refreshToken, req.waiter.waiter_id);
+
+    res.setHeader("Authorization", `Bearer ${accessToken}`);
+    return sendResponse(res, "Successfuly renewed your session", Operation.Ok);
+  } catch (e) {
+    logger("Failed to new waiter session", e);
+
+    return sendResponse(
+      res,
+      "Failed to renew your session",
+      Operation.ServerError
+    );
+  }
+};
+
 // ///////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////////////////
-// ///////////////////////////////////////////////////////////
+// TODO: delete this function
 export const waiterRegister = async (req: Request, res: Response) => {
   const validatedReq = waiterLogInReq.safeParse(req.body);
 
