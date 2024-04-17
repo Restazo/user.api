@@ -7,6 +7,7 @@ import {
   RestaurantOverviewBaseSchema,
   RawExtendedAddressSchema,
 } from "../schemas/schemas.js";
+import getImageUrl from "../helpers/getImageUrl.js";
 
 export const getRestaurantById = async (
   id: string
@@ -140,7 +141,7 @@ export const getRestaurantMenuByRestaurantId = async (
       category.categoryItems.push({
         id: row.item_id,
         name: row.item_name,
-        image: `${process.env.ASSETS_URL}${row.item_image}`,
+        image: getImageUrl(row.item_image),
         description: row.item_description,
         ingredients: row.item_ingredients,
         priceAmount: row.item_price_amount,
