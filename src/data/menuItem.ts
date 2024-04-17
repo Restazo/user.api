@@ -1,8 +1,9 @@
-import MenuItemData from "../schemas/menuItemData.js";
+import { MenuItemSchema } from "../schemas/schemas.js";
+import { MenuItem } from "../schemas/types.js";
 import pool from "../db.js";
 import getImageUrl from "../helpers/getImageUrl.js";
 
-export const getMenuItemById = async (id: string) => {
+export const getMenuItemById = async (id: string): Promise<MenuItem | null> => {
   try {
     const result = await pool.query(
       `SELECT 
@@ -25,9 +26,9 @@ export const getMenuItemById = async (id: string) => {
       return null;
     }
 
-    MenuItemData.parse(result.rows[0]);
+    MenuItemSchema.parse(result.rows[0]);
 
-    const itemData = {
+    const itemData: MenuItem = {
       ...result.rows[0],
       image: getImageUrl(result.rows[0].image),
     };
