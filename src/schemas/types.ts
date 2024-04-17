@@ -5,9 +5,12 @@ import {
   ExtendedAddressSchema,
   AddressSchema,
   RestaurantOverviewBaseSchema,
+  MenuItemSchema,
 } from "./schemas.js";
 
 export type Menu = z.infer<typeof MenuSchema>;
+
+export type MenuItem = z.infer<typeof MenuItemSchema>;
 
 export type Address = z.infer<typeof AddressSchema>;
 

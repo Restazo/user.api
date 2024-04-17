@@ -2,8 +2,8 @@ import * as z from "zod";
 
 const MenuItemReq = z
   .object({
-    restaurantId: z.string().min(1).uuid(),
-    itemId: z.string().min(1).uuid(),
+    restaurantId: z.string().uuid(),
+    itemId: z.string().uuid(),
   })
   .strict();
 export default MenuItemReq;
