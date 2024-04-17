@@ -26,10 +26,10 @@ export const getMenuItemById = async (id: string): Promise<MenuItem | null> => {
       return null;
     }
 
-    MenuItemSchema.parse(result.rows[0]);
+    const validatedData = MenuItemSchema.parse(result.rows[0]);
 
     const itemData: MenuItem = {
-      ...result.rows[0],
+      ...validatedData,
       image: getImageUrl(result.rows[0].image),
     };
 
