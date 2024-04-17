@@ -25,7 +25,7 @@ export const RawExtendedAddressSchema = AddressSchema.extend({
 });
 
 export const RestaurantOverviewBaseSchema = z.object({
-  id: z.string().uuid().min(1),
+  id: z.string().uuid(),
   name: z.string().min(1),
   description: z.string().nullable(),
   affordability: z.number().nullable(),
@@ -34,8 +34,8 @@ export const RestaurantOverviewBaseSchema = z.object({
 });
 
 export const MenuItemSchema = z.object({
-  id: z.string().min(1).uuid(),
-  categoryId: z.string().min(1).uuid(),
+  id: z.string().uuid(),
+  categoryId: z.string().uuid(),
   name: z.string().min(1),
   image: z.string().min(1).nullable(),
   description: z.string().min(1).nullable(),
@@ -46,7 +46,7 @@ export const MenuItemSchema = z.object({
 
 export const MenuSchema = z.array(
   z.object({
-    categoryId: z.string().min(1).uuid(),
+    categoryId: z.string().uuid(),
     categoryLabel: z.string().min(1),
     categoryItems: z.array(MenuItemSchema.omit({ categoryId: true })),
   })
@@ -55,7 +55,7 @@ export const MenuSchema = z.array(
 // Restaurant Overview Schemas
 
 export const RestaurantOverviewReqSchema = z.object({
-  restaurantId: z.string().min(1).uuid(),
+  restaurantId: z.string().uuid(),
 });
 
 export const RestaurantOverviewResSchema = z.object({
