@@ -1,7 +1,7 @@
-import { MenuItemSchema } from "../schemas/schemas.js";
-import { MenuItem } from "../schemas/types.js";
+import { MenuItem } from "../schemas/types/restaurant.js";
 import pool from "../db.js";
 import getImageUrl from "../helpers/getImageUrl.js";
+import { MenuItemSchema } from "../schemas/menu.js";
 
 export const getMenuItemById = async (id: string): Promise<MenuItem | null> => {
   try {

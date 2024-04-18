@@ -1,12 +1,12 @@
-import * as z from "zod";
+import { z } from "zod";
 
 import {
-  MenuSchema,
-  ExtendedAddressSchema,
   AddressSchema,
+  ExtendedAddressSchema,
   RestaurantOverviewBaseSchema,
-  MenuItemSchema,
-} from "./schemas.js";
+} from "../restaurant.js";
+
+import { MenuItemSchema, MenuSchema } from "../menu.js";
 
 export type Menu = z.infer<typeof MenuSchema>;
 

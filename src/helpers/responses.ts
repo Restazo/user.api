@@ -4,7 +4,7 @@ import {
   Status,
   statusCodeMap,
   statusMap,
-} from "./types/responseMaps.js";
+} from "../schemas/responseMaps.js";
 
 class ResponseBody {
   status: Status;
