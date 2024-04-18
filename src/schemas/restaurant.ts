@@ -21,6 +21,8 @@ export const RawExtendedAddressSchema = AddressSchema.extend({
   distanceKm: z.number().min(0),
 });
 
+// Restaurant Overview Schemas
+
 export const RestaurantOverviewBaseSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
