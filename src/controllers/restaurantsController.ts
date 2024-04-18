@@ -4,19 +4,12 @@ import pool from "../db.js";
 import { sendResponse } from "../helpers/responses.js";
 import logError from "../helpers/logger.js";
 import { Operation } from "../schemas/responseMaps.js";
-// import RestaurantsNearUser from "../schemas/restaurantsNearUser.js";
 import getImageUrl from "../helpers/getImageUrl.js";
 import {
   getRestaurantAddressById,
   getRestaurantById,
   getRestaurantMenuByRestaurantId,
 } from "../data/restaurant.js";
-// import restaurantsNearYouSchema from "../schemas/restaurantsNearYouReq.js";
-// import {
-//   RestaurantOverviewReqSchema,
-//   RestaurantOverviewResSchema,
-// } from "../schemas/schemas.js";
-// import restaurantOverviewQueryParamsSchema from "../schemas/restaurantOverviewQueryParams.js";
 import convertIntoNumbers from "../helpers/convertIntoNumers.js";
 import {
   RestaurantOverviewReqSchema,
@@ -25,6 +18,8 @@ import {
   restaurantOverviewQueryParamsSchema,
   restaurantsNearYouReq,
 } from "../schemas/restaurant.js";
+import { getMenuItemById } from "../data/menuItem.js";
+import { MenuItemReq } from "../schemas/menu.js";
 
 const defaultRange = Number(process.env.DEFAULT_RANGE);
 const defaultLatitude = Number(process.env.DEFAULT_LAT);
@@ -129,9 +124,9 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
     logError("Failed to fetch user closest restaurants", error);
 
     // Send an error response back to the client
-    return sendResponse(
+    sendResponse(
       res,
-      "Something went wrong with looking for restaurants near you",
+      "We are having some problems with looking for restaurants near you",
       Operation.ServerError
     );
   }
@@ -218,6 +213,35 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
     return sendResponse(
       res,
       "Something went wrong with looking for a restaurant",
+      Operation.ServerError
+    );
+  }
+};
+
+export const getMenuItem = async (req: Request, res: Response) => {
+  const validatedRequestParams = MenuItemReq.safeParse(req.params);
+
+  if (!validatedRequestParams.success) {
+    return sendResponse(res, "Invalid request", Operation.BadRequest);
+  }
+  try {
+    const itemData = await getMenuItemById(validatedRequestParams.data.itemId);
+
+    if (!itemData) {
+      return sendResponse(res, "No menu item data found", Operation.NotFound);
+    }
+
+    sendResponse(
+      res,
+      `Menu item data with id: ${validatedRequestParams.data.itemId}`,
+      Operation.Ok,
+      itemData
+    );
+  } catch (error) {
+    logError("Failed to get menu item data", error);
+    return sendResponse(
+      res,
+      "Failed to get menu item data",
       Operation.ServerError
     );
   }
