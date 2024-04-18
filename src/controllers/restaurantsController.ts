@@ -3,28 +3,35 @@ import { Request, Response } from "express";
 import pool from "../db.js";
 import { sendResponse } from "../helpers/responses.js";
 import logError from "../helpers/logger.js";
-import { Operation } from "../schemas/types/responseMaps.js";
-import RestaurantsNearUser from "../schemas/restaurantsNearUser.js";
+import { Operation } from "../schemas/responseMaps.js";
+// import RestaurantsNearUser from "../schemas/restaurantsNearUser.js";
 import getImageUrl from "../helpers/getImageUrl.js";
 import {
   getRestaurantAddressById,
   getRestaurantById,
   getRestaurantMenuByRestaurantId,
 } from "../data/restaurant.js";
-import restaurantsNearYouSchema from "../schemas/restaurantsNearYouReq.js";
+// import restaurantsNearYouSchema from "../schemas/restaurantsNearYouReq.js";
+// import {
+//   RestaurantOverviewReqSchema,
+//   RestaurantOverviewResSchema,
+// } from "../schemas/schemas.js";
+// import restaurantOverviewQueryParamsSchema from "../schemas/restaurantOverviewQueryParams.js";
+import convertIntoNumbers from "../helpers/convertIntoNumers.js";
 import {
   RestaurantOverviewReqSchema,
   RestaurantOverviewResSchema,
-} from "../schemas/schemas.js";
-import restaurantOverviewQueryParamsSchema from "../schemas/restaurantOverviewQueryParams.js";
-import convertIntoNumbers from "../helpers/convertIntoNumers.js";
+  RestaurantsNearUser,
+  restaurantOverviewQueryParamsSchema,
+  restaurantsNearYouReq,
+} from "../schemas/restaurant.js";
 
 const defaultRange = Number(process.env.DEFAULT_RANGE);
 const defaultLatitude = Number(process.env.DEFAULT_LAT);
 const defaultLongitude = Number(process.env.DEFAULT_LON);
 
 export const getRestaurantsNearYou = async (req: Request, res: Response) => {
-  const validatedRequest = restaurantsNearYouSchema.safeParse(req.query);
+  const validatedRequest = restaurantsNearYouReq.safeParse(req.query);
 
   if (!validatedRequest.success) {
     return sendResponse(res, "Invalid request", Operation.BadRequest);

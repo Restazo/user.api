@@ -2,11 +2,11 @@ import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
 import { sendResponse } from "./responses.js";
-import { Operation } from "../schemas/types/responseMaps.js";
+import { Operation } from "../schemas/responseMaps.js";
 import { TokenType, verifyToken } from "./jwtTools.js";
-import { authTokensPayload } from "../schemas/authTokens.js";
 import pool from "../db.js";
-import { deleteWaiterRefreshToken } from "../data/waiter.js";
+import { deleteWaiterRefreshToken } from "../lib/waiter.js";
+import { waiterAuthTokensPayload } from "../schemas/waiter.js";
 
 export const protectWaiterRoute = async (
   req: Request,
@@ -21,7 +21,7 @@ export const protectWaiterRoute = async (
 
   const accessTokenPayload: any = jwt.decode(accessToken);
 
-  const payloadVerified = authTokensPayload.safeParse(accessTokenPayload);
+  const payloadVerified = waiterAuthTokensPayload.safeParse(accessTokenPayload);
 
   if (!payloadVerified.success) {
     return sendResponse(res, "Invalid token", Operation.BadRequest);
@@ -52,6 +52,7 @@ export const protectWaiterRoute = async (
       waiter_id: accessTokenPayload.waiter_id,
       waiter_email: accessTokenPayload.waiter_email,
       restaurant_id: accessTokenPayload.restaurant_id,
+      waiter_name: accessTokenPayload.waiter_name,
     };
     return next();
   }
@@ -63,6 +64,7 @@ export const protectWaiterRoute = async (
       waiter_id: accessTokenPayload.waiter_id,
       waiter_email: accessTokenPayload.waiter_email,
       restaurant_id: accessTokenPayload.restaurant_id,
+      waiter_name: accessTokenPayload.waiter_name,
     };
 
     return next();

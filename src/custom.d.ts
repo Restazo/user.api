@@ -1,11 +1,10 @@
 import { z } from "zod";
 import { EnvSchema } from "./schemas/env.js";
-import { Waiter } from "./schemas/authTokens.ts";
-
+import { WaiterRequestObj } from "./schemas/types/waiter.ts";
 declare global {
   namespace Express {
     interface Request {
-      waiter: Waiter;
+      waiter: WaiterRequestObj;
     }
   }
   namespace NodeJS {

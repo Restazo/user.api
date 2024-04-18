@@ -1,7 +1,7 @@
-import { Request, response, Response } from "express";
+import { Request, Response } from "express";
 import db from "../db.js";
 import { sendResponse } from "../helpers/responses.js";
-import { Operation } from "../schemas/types/responseMaps.js";
+import { Operation } from "../schemas/responseMaps.js";
 
 export const getDeviceId = async (req: Request, res: Response) => {
   try {

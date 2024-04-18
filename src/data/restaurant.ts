@@ -1,13 +1,13 @@
 import pool from "../db.js";
+import { ExtendedAddress, Restaurant } from "../schemas/types/restaurant.js";
 
-import { Menu, ExtendedAddress, Restaurant } from "../schemas/types.js";
-import {
-  MenuSchema,
-  ExtendedAddressSchema,
-  RestaurantOverviewBaseSchema,
-  RawExtendedAddressSchema,
-} from "../schemas/schemas.js";
 import getImageUrl from "../helpers/getImageUrl.js";
+import {
+  RawExtendedAddressSchema,
+  RestaurantOverviewBaseSchema,
+} from "../schemas/restaurant.js";
+import { Menu } from "../schemas/types/menu.js";
+import { MenuSchema } from "../schemas/menu.js";
 
 export const getRestaurantById = async (
   id: string
@@ -83,9 +83,6 @@ export const getRestaurantAddressById = async (
       ...address,
       distanceKm: address.distanceKm.toFixed(1),
     };
-
-    // Parse address before returning
-    ExtendedAddressSchema.parse(address);
 
     return address;
   } catch (error) {
