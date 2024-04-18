@@ -17,7 +17,7 @@ export const getFullWaiterData = async (
         pin,
         restaurant_id as "restaurantId",
         confirmation_pin as "confirmationPin",
-        EXTRACT(EPOCH FROM (NOW() - confirmation_pin_created_at)) / 60 AS "minutesDifference"
+        CAST (EXTRACT(EPOCH FROM (NOW() - confirmation_pin_created_at)) / 60 AS FLOAT) AS "minutesDifference"
        FROM
         waiter
        WHERE

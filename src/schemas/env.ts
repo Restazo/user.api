@@ -20,4 +20,5 @@ export const EnvSchema = z.object({
   ACCESS_TOKEN_SECRET: z.string().min(1),
   ACCESS_TOKEN_EXPIRY: z.string().min(1),
   REFRESH_TOKEN_EXPIRY: z.string().min(1),
+  RESEND_EMAIL_DOMAIN: z.string().min(1),
 });
