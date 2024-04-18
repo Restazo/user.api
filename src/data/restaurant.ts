@@ -1,12 +1,13 @@
 import pool from "../db.js";
+import { ExtendedAddress, Restaurant } from "../schemas/types/restaurant.js";
 
-import { Menu, ExtendedAddress, Restaurant } from "../schemas/types.js";
+import getImageUrl from "../helpers/getImageUrl.js";
 import {
-  MenuSchema,
-  ExtendedAddressSchema,
-  RestaurantOverviewBaseSchema,
   RawExtendedAddressSchema,
-} from "../schemas/schemas.js";
+  RestaurantOverviewBaseSchema,
+} from "../schemas/restaurant.js";
+import { Menu } from "../schemas/types/menu.js";
+import { MenuSchema } from "../schemas/menu.js";
 
 export const getRestaurantById = async (
   id: string
@@ -83,9 +84,6 @@ export const getRestaurantAddressById = async (
       distanceKm: address.distanceKm.toFixed(1),
     };
 
-    // Parse address before returning
-    ExtendedAddressSchema.parse(address);
-
     return address;
   } catch (error) {
     console.error("Error from getRestaurantAddressById function");
@@ -140,7 +138,7 @@ export const getRestaurantMenuByRestaurantId = async (
       category.categoryItems.push({
         id: row.item_id,
         name: row.item_name,
-        image: `${process.env.ASSETS_URL}${row.item_image}`,
+        image: getImageUrl(row.item_image),
         description: row.item_description,
         ingredients: row.item_ingredients,
         priceAmount: row.item_price_amount,
