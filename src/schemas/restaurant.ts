@@ -2,6 +2,10 @@ import * as z from "zod";
 
 import { MenuSchema } from "./menu.js";
 
+const toNumber = z.number().or(z.string()).pipe(z.coerce.number());
+const latitude = toNumber.refine((value) => value >= -90 && value <= 90);
+const longitude = toNumber.refine((value) => value >= -180 && value <= 180);
+
 export const AddressSchema = z.object({
   addressLine: z.string().min(1),
   city: z.string().min(1),
@@ -9,16 +13,13 @@ export const AddressSchema = z.object({
   countryCode: z.string().min(1),
 });
 
-export const ExtendedAddressSchema = AddressSchema.extend({
-  latitude: z.string().min(1),
-  longitude: z.string().min(1),
-  distanceKm: z.string().min(1),
+export const CoordsSchema = z.object({
+  latitude: latitude,
+  longitude: longitude,
 });
 
-export const RawExtendedAddressSchema = AddressSchema.extend({
-  latitude: z.string().min(1),
-  longitude: z.string().min(1),
-  distanceKm: z.number().min(0),
+export const ExtendedAddressSchema = AddressSchema.merge(CoordsSchema).extend({
+  distanceKm: toNumber.transform((value) => parseFloat(value.toFixed(1))),
 });
 
 // Restaurant Overview Schemas
@@ -45,32 +46,24 @@ export const RestaurantOverviewResSchema = z.object({
 
 export const restaurantsNearYouReq = z
   .object({
-    user_lat: z.string().optional(),
-    user_lon: z.string().optional(),
-    range_km: z.string().optional(),
+    user_lat: latitude.optional(),
+    user_lon: longitude.optional(),
+    range_km: toNumber.optional(),
   })
   .strict();
 
 export const RestaurantsNearUser = z.array(
-  z
-    .object({
-      id: z.string().uuid(),
-      name: z.string().min(1),
-      coverImage: z.string().nullable(),
-      logoImage: z.string().nullable(),
-      description: z.string().nullable(),
-      affordability: z.number(),
-      latitude: z.string().min(1),
-      longitude: z.string().min(1),
+  RestaurantOverviewBaseSchema.merge(CoordsSchema)
+    .extend({
       addressLine: z.string().min(1),
-      distanceKm: z.number().min(0),
+      distanceKm: toNumber.transform((value) => parseFloat(value.toFixed(1))),
     })
     .strict()
 );
 
 export const restaurantOverviewQueryParamsSchema = z
   .object({
-    user_lat: z.string().optional(),
-    user_lon: z.string().optional(),
+    user_lat: latitude.optional(),
+    user_lon: longitude.optional(),
   })
   .strict();

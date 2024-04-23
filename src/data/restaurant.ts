@@ -3,7 +3,7 @@ import { ExtendedAddress, Restaurant } from "../schemas/types/restaurant.js";
 
 import getImageUrl from "../helpers/getImageUrl.js";
 import {
-  RawExtendedAddressSchema,
+  ExtendedAddressSchema,
   RestaurantOverviewBaseSchema,
 } from "../schemas/restaurant.js";
 import { Menu } from "../schemas/types/menu.js";
@@ -39,9 +39,9 @@ export const getRestaurantById = async (
     }
 
     // Validate restaurant before returning it
-    RestaurantOverviewBaseSchema.parse(restaurant);
+    const validatedRestaurant = RestaurantOverviewBaseSchema.parse(restaurant);
 
-    return restaurant;
+    return validatedRestaurant;
   } catch (error) {
     console.error("Error from getRestaurantById function");
     throw error;
@@ -50,8 +50,8 @@ export const getRestaurantById = async (
 
 export const getRestaurantAddressById = async (
   id: string,
-  lat: string,
-  lon: string
+  lat: number,
+  lon: number
 ): Promise<ExtendedAddress | null> => {
   try {
     const existingAddress = await pool.query(
@@ -68,7 +68,7 @@ export const getRestaurantAddressById = async (
       restaurant_address
        WHERE
       restaurant_id = $1`,
-      [id, lat, lon]
+      [id, lat, lon] as any
     );
 
     if (existingAddress.rows.length === 0) {
@@ -77,14 +77,9 @@ export const getRestaurantAddressById = async (
 
     let address = existingAddress.rows[0];
 
-    RawExtendedAddressSchema.parse(address);
+    const parsedAddress = ExtendedAddressSchema.parse(address);
 
-    address = {
-      ...address,
-      distanceKm: address.distanceKm.toFixed(1),
-    };
-
-    return address;
+    return parsedAddress;
   } catch (error) {
     console.error("Error from getRestaurantAddressById function");
     throw error;
@@ -149,9 +144,9 @@ export const getRestaurantMenuByRestaurantId = async (
     const menu = Array.from(menuMap.values());
 
     // Parse our menu before returning it
-    MenuSchema.parse(menu);
+    const validatedMenu = MenuSchema.parse(menu);
 
-    return menu;
+    return validatedMenu;
   } catch (error) {
     console.error("Error from getRestaurantMenuByRestaurantId function");
     throw error;
