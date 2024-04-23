@@ -10,7 +10,6 @@ import {
   getRestaurantById,
   getRestaurantMenuByRestaurantId,
 } from "../data/restaurant.js";
-import convertIntoNumbers from "../helpers/convertIntoNumers.js";
 import {
   RestaurantOverviewReqSchema,
   RestaurantOverviewResSchema,
@@ -32,42 +31,19 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
     return sendResponse(res, "Invalid request", Operation.BadRequest);
   }
 
-  let valuesToConvert: Map<string, any> = new Map();
+  const { user_lat, user_lon, range_km } = validatedRequest.data;
 
-  valuesToConvert.set(
-    "range_km",
-    validatedRequest.data.range_km
-      ? validatedRequest.data.range_km
-      : defaultRange
-  );
+  // Start with default latitude and longitude values
+  let userLatitude: number = defaultLatitude;
+  let userLongitude: number = defaultLongitude;
 
-  valuesToConvert.set(
-    "user_lat",
-    validatedRequest.data.user_lat
-      ? validatedRequest.data.user_lat
-      : defaultLatitude
-  );
-
-  valuesToConvert.set(
-    "user_lon",
-    validatedRequest.data.user_lon
-      ? validatedRequest.data.user_lon
-      : defaultLongitude
-  );
-
-  const convertedValues: Map<string, number> | null =
-    convertIntoNumbers(valuesToConvert);
-
-  if (!convertedValues) {
-    return sendResponse(res, "Invalid query values", Operation.BadRequest);
+  // if both latitude AND longitude. Set values accordingly
+  if (user_lat && user_lon) {
+    userLatitude = user_lat;
+    userLongitude = user_lon;
   }
 
-  const userLatitude = convertedValues.get("user_lat");
-  const userLongitude = convertedValues.get("user_lon");
-  const rangeKm = convertedValues.get("range_km");
-  if (!userLatitude || !userLongitude || !rangeKm) {
-    return sendResponse(res, "Something went wrong", Operation.ServerError);
-  }
+  const rangeKm: number = range_km ? range_km : defaultRange;
 
   try {
     const { rows } = await pool.query(
@@ -102,20 +78,18 @@ export const getRestaurantsNearYou = async (req: Request, res: Response) => {
       return sendResponse(res, "Something went wrong", Operation.ServerError);
     }
 
-    const result = rows.map((element) => {
+    const result = dbResultValid.data.map((element) => {
       return {
         ...element,
         coverImage: getImageUrl(element.coverImage),
         logoImage: getImageUrl(element.logoImage),
-        distanceKm: element.distanceKm.toFixed(1),
       };
     });
 
     // Send a successful response with result
     return sendResponse(
       res,
-      `Restaurants near you within 100km range`,
-      // `Restaurants near you within ${rangeKm}km range`,
+      `Restaurants near you within ${rangeKm}km range`,
       Operation.Ok,
       result
     );
@@ -143,33 +117,16 @@ export const getRestaurantOverview = async (req: Request, res: Response) => {
       return sendResponse(res, "Invalid request", Operation.BadRequest);
     }
 
-    let valuesToConvert: Map<string, any> = new Map();
+    const { user_lat, user_lon } = validatedQueryParams.data;
 
-    valuesToConvert.set(
-      "user_lat",
-      validatedQueryParams.data.user_lat
-        ? validatedQueryParams.data.user_lat
-        : defaultLatitude
-    );
+    // Start with default latitude and longitude values
+    let userLatitude: number = defaultLatitude;
+    let userLongitude: number = defaultLongitude;
 
-    valuesToConvert.set(
-      "user_lon",
-      validatedQueryParams.data.user_lon
-        ? validatedQueryParams.data.user_lon
-        : defaultLongitude
-    );
-
-    const convertedValues: Map<string, number> | null =
-      convertIntoNumbers(valuesToConvert);
-
-    if (!convertedValues) {
-      return sendResponse(res, "Invalid query values", Operation.BadRequest);
-    }
-
-    const userLatitude = convertedValues.get("user_lat")?.toString();
-    const userLongitude = convertedValues.get("user_lon")?.toString();
-    if (!userLatitude || !userLongitude) {
-      return sendResponse(res, "Something went wrong", Operation.ServerError);
+    // if both latitude AND longitude. Set values accordingly
+    if (user_lat && user_lon) {
+      userLatitude = user_lat;
+      userLongitude = user_lon;
     }
 
     const { restaurantId } = validatedParams.data;
