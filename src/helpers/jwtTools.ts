@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 
 import { TableSessionJwtPayload } from "../schemas/types/table.js";
+import { TableSchema } from "../schemas/table.js";
 
 export enum TokenType {
   access,
@@ -31,7 +32,12 @@ export const verifyTableSessionToken = (
   token: string
 ): { payload: TableSessionJwtPayload | null; expired: boolean } => {
   try {
+    // verify data structure of token
+
+    TableSchema.parse(jwt.decode(token));
+
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
     return { payload: decoded as TableSessionJwtPayload, expired: false };
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
