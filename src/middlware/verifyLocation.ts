@@ -28,7 +28,7 @@ const verifyLocation = async (
   if (isWithinRange) {
     return next();
   }
-  return sendResponse(res, "User is out of range", Operation.NotAllowed);
+  return sendResponse(res, "You are out of restaraunt area", Operation.NotAllowed);
 };
 
 export default verifyLocation;
