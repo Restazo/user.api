@@ -3,7 +3,6 @@ import { NextFunction, Request, Response } from "express";
 import { verifyTableSessionToken } from "../helpers/jwtTools.js";
 import { sendResponse } from "../helpers/responses.js";
 
-import { TableSessionMiddlewareReqSchema } from "schemas/table.js";
 import { Operation } from "../schemas/responseMaps.js";
 
 const tableSessionProtect = async (
@@ -32,6 +31,7 @@ const tableSessionProtect = async (
       label,
       restaurantCoords,
     };
+
     return next();
   }
 

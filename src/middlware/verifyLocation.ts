@@ -3,17 +3,14 @@ import { NextFunction, Request, Response } from "express";
 import { sendResponse } from "../helpers/responses.js";
 import { compareDistance } from "../helpers/compareDistance.js";
 
-import { TableSessionMiddlewareReqSchema } from "schemas/table.js";
+import { TableSessionMiddlewareReqSchema } from "../schemas/table.js";
 import { Operation } from "../schemas/responseMaps.js";
 
-const tableSessionProtect = async (
+const verifyLocation = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.table) {
-    return sendResponse(res, "Invalid session", Operation.Unauthorized);
-  }
   const validatedRequest = TableSessionMiddlewareReqSchema.safeParse(req.body);
 
   if (!validatedRequest.success) {
@@ -23,7 +20,10 @@ const tableSessionProtect = async (
   const userCoords = validatedRequest.data.userCoords;
 
   // verify location
-  const isWithinRange = compareDistance(userCoords, req.table.restaurantCoords);
+  const isWithinRange = compareDistance(
+    userCoords,
+    req.table!.restaurantCoords
+  );
 
   if (isWithinRange) {
     return next();
@@ -31,4 +31,4 @@ const tableSessionProtect = async (
   return sendResponse(res, "User is out of range", Operation.NotAllowed);
 };
 
-export default tableSessionProtect;
+export default verifyLocation;
