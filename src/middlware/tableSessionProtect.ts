@@ -1,12 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
 
 import { verifyTableSessionToken } from "../helpers/jwtTools.js";
 import { sendResponse } from "../helpers/responses.js";
 
 import { Operation } from "../schemas/responseMaps.js";
-
-import { TableSchema } from "../schemas/table.js";
 
 const tableSessionProtect = async (
   req: Request,
@@ -18,11 +15,6 @@ const tableSessionProtect = async (
   // If no access token
   if (!tableSessionToken) {
     return sendResponse(res, "Invalid session", Operation.Unauthorized);
-  }
-
-  // If access token does have the correct payload
-  if (!TableSchema.safeParse(jwt.decode(tableSessionToken)).success) {
-    return sendResponse(res, "Invalid token", Operation.BadRequest);
   }
 
   // Verify access token
