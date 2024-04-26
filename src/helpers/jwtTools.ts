@@ -1,4 +1,4 @@
-import jwt, { JsonWebTokenError } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 import { TableSessionJwtPayload } from "../schemas/types/table.js";
 
@@ -34,7 +34,7 @@ export const verifyTableSessionToken = (
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
     return { payload: decoded as TableSessionJwtPayload, expired: false };
   } catch (error) {
-    if (error instanceof JsonWebTokenError) {
+    if (error instanceof jwt.JsonWebTokenError) {
       return { payload: null, expired: error.message.includes("jwt expired") };
     } else {
       return { payload: null, expired: false };
