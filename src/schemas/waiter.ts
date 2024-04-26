@@ -1,10 +1,10 @@
 import * as z from "zod";
 
 export const waiterAuthTokensPayload = z.object({
-  waiter_id: z.string().uuid(),
-  restaurant_id: z.string().uuid(),
-  waiter_email: z.string().email(),
-  waiter_name: z.string().min(1),
+  waiterId: z.string().uuid(),
+  restaurantId: z.string().uuid(),
+  waiterEmail: z.string().email(),
+  waiterName: z.string().min(1),
 });
 
 export const fullWaiterData = z

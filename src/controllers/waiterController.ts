@@ -1,14 +1,17 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 
-import { sendResponse } from "../helpers/responses.js";
-import { Operation } from "../schemas/responseMaps.js";
 import pool from "../db.js";
-import { getFullWaiterData } from "../data/waiter.js";
+
+import { sendResponse } from "../helpers/responses.js";
 import logger from "../helpers/logger.js";
 import { generatePin } from "../helpers/generatePin.js";
 import sendConfirmationEmail from "../helpers/sendConfirmationEmail.js";
 import { signTokens } from "../helpers/jwtTools.js";
+
+import { getFullWaiterData } from "../data/waiter.js";
+
+import { Operation } from "../schemas/responseMaps.js";
 import {
   deleteWaiterRefreshToken,
   logInTheWaiter,
@@ -109,10 +112,10 @@ export const waiterLogInConfirm = async (req: Request, res: Response) => {
     }
 
     const { accessToken, refreshToken } = signTokens({
-      waiter_id: waiterData.id,
-      restaurant_id: waiterData.restaurantId,
-      waiter_email: waiterData.email,
-      waiter_name: waiterData.name,
+      waiterId: waiterData.id,
+      restaurantId: waiterData.restaurantId,
+      waiterEmail: waiterData.email,
+      waiterName: waiterData.name,
     });
 
     await logInTheWaiter(validatedReq.data.email, refreshToken, client);
@@ -141,7 +144,7 @@ export const waiterLogInConfirm = async (req: Request, res: Response) => {
 
 export const waiterLogOut = async (req: Request, res: Response) => {
   try {
-    await deleteWaiterRefreshToken(req.waiter.waiter_id);
+    await deleteWaiterRefreshToken(req.waiter.waiterId);
 
     return sendResponse(res, "Successful log out", Operation.Ok);
   } catch (e) {
@@ -152,21 +155,21 @@ export const waiterLogOut = async (req: Request, res: Response) => {
 
 export const getSession = async (req: Request, res: Response) => {
   const { accessToken, refreshToken } = signTokens({
-    waiter_id: req.waiter.waiter_id,
-    waiter_email: req.waiter.waiter_email,
-    restaurant_id: req.waiter.restaurant_id,
-    waiter_name: req.waiter.waiter_name,
+    waiterId: req.waiter.waiterId,
+    waiterEmail: req.waiter.waiterEmail,
+    restaurantId: req.waiter.restaurantId,
+    waiterName: req.waiter.waiterName,
   });
 
   try {
     const waiterName = await renewWaiterRefreshToken(
       refreshToken,
-      req.waiter.waiter_id
+      req.waiter.waiterId
     );
 
     res.setHeader("Authorization", `Bearer ${accessToken}`);
     return sendResponse(res, "Successfuly renewed your session", Operation.Ok, {
-      email: req.waiter.waiter_email,
+      email: req.waiter.waiterEmail,
       name: waiterName,
     });
   } catch (e) {
