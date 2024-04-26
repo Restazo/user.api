@@ -1,9 +1,6 @@
 import pool from "../db.js";
 
-import * as z from "zod";
-
-import { Table } from "../schemas/types/table.js";
-import { TableSchema } from "../schemas/table.js";
+import { DeviceIdSchema } from "../schemas/device.js";
 
 export const getDeviceById = async (id: string): Promise<string | null> => {
   try {
@@ -19,14 +16,14 @@ export const getDeviceById = async (id: string): Promise<string | null> => {
       return null;
     }
 
-    const deviceId = existingDevice.rows[0];
+    const deviceId = existingDevice.rows[0].id;
 
     // Validate restaurant before returning it
-    const validatedTable = z.string().uuid().parse(deviceId);
+    const validatedDeviceId = DeviceIdSchema.parse(deviceId);
 
-    return deviceId;
+    return validatedDeviceId;
   } catch (error) {
-    console.error("Error from getTableById function");
+    console.error("Error from getDeviceById function");
     throw error;
   }
 };
