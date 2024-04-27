@@ -205,3 +205,15 @@ export const placeOrder = async (req: Request, res: Response) => {
     return sendResponse(res, "Something went wrong", Operation.ServerError);
   }
 };
+
+export const getSession = async (req: Request, res: Response) => {
+  const restaurantData = await getRestaurantById(req.table!.restaurantId);
+
+  const returnData = {
+    restaurantName: restaurantData!.name,
+    restaurantLogo: restaurantData!.logoImage,
+    restaurantId: restaurantData!.id,
+  };
+
+  return sendResponse(res, "Nice session", Operation.Ok, returnData);
+};
