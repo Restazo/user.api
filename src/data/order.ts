@@ -52,9 +52,9 @@ export const getExistingCustomerOrder = async (
      SELECT 
       oi.item_id AS "itemId",
       mi.name AS "itemName",
-      oi.amount AS "quantity"
+      oi.quantity 
      FROM 
-      order_items AS oi
+      order_item AS oi
      JOIN
       menu_item AS mi ON oi.item_id = mi.id
      WHERE order_id = $1

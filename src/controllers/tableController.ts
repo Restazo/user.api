@@ -29,6 +29,7 @@ export const startSession = async (req: Request, res: Response) => {
   try {
     // Validate request body
     const validatedRequest = TableSessionReqSchema.safeParse(req.body);
+
     if (!validatedRequest.success) {
       return sendResponse(res, "Invalid request body", Operation.BadRequest);
     }
@@ -138,7 +139,13 @@ export const requestWaiter = async (req: Request, res: Response) => {
       });
     }
 
-    return sendResponse(res, "Successfully requested a waiter", Operation.Ok);
+    return sendResponse(
+      res,
+      `Successfully requested ${
+        requestType == "bill" ? "the bill" : "a waiter"
+      }`,
+      Operation.Ok
+    );
   } catch (error) {
     logger("Failed to request waiter", error);
     return sendResponse(res, "Something went wrong", Operation.ServerError);
@@ -150,7 +157,6 @@ export const placeOrder = async (req: Request, res: Response) => {
     const validatedRequest = TableOrderReqSchema.safeParse(req.body);
 
     if (!validatedRequest.success) {
-      console.log(validatedRequest.error);
       return sendResponse(res, "Invalid request body", Operation.BadRequest);
     }
 

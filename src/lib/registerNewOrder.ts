@@ -26,7 +26,7 @@ export const registerNewOrder = async (
 
     // Insert data in the ongoing_orders
     const ongoingTableOrderQuery = `
-    INSERT INTO ongoing_table_orders (table_id, restaurant_id, order_id)
+    INSERT INTO ongoing_order (table_id, restaurant_id, order_id)
     VALUES ($1, $2, $3)
     `;
     await client.query(ongoingTableOrderQuery, [
@@ -38,7 +38,7 @@ export const registerNewOrder = async (
     // insert data into order_items
     for (const orderItem of orderObject.orderItems) {
       const orderItemsQuery = `
-      INSERT INTO order_items (order_id, item_id, amount)
+      INSERT INTO order_item (order_id, item_id, amount)
       VALUES($1, $2, $3)
       `;
 
