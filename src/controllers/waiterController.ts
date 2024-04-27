@@ -229,12 +229,13 @@ export const reviewOrder = async (req: Request, res: Response) => {
       .get(orderWithOrderId.deviceId);
 
     const orderDataToCustomer: OrderResponseToCustomer = {
-      orderItems: orderWithOrderId.orderItems,
+      orderId: orderId,
       orderStatus: orderStatus as "declined" | "accepted",
+      orderItems: orderWithOrderId.orderItems,
     };
 
     if (customerWS) {
-      return sendWSResponse(
+      await sendWSResponse(
         customerWS,
         `The restaurant has ${orderStatus} your order`,
         Operation.Ok,
@@ -250,12 +251,12 @@ export const reviewOrder = async (req: Request, res: Response) => {
       // Message all waiters connected
       const message = JSON.stringify(snapshot);
 
-      connectedWaiters.forEach((ws) => {
-        ws.send(message);
+      connectedWaiters.forEach(async (ws) => {
+        await ws.send(message);
       });
     }
 
-    return sendResponse(res, "Successfully placed order", Operation.Ok);
+    return sendResponse(res, `Successfully ${orderStatus} order`, Operation.Ok);
   } catch (error) {
     logger("Failed to place order", error);
     return sendResponse(res, "Something went wrong", Operation.ServerError);
@@ -301,7 +302,11 @@ export const dismissRequest = async (req: Request, res: Response) => {
       });
     }
 
-    return sendResponse(res, "Successfully dismissed the request", Operation.Ok);
+    return sendResponse(
+      res,
+      "Successfully dismissed the request",
+      Operation.Ok
+    );
   } catch (error) {
     logger("Failed to place order", error);
     return sendResponse(res, "Something went wrong", Operation.ServerError);

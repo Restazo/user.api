@@ -71,6 +71,7 @@ export const getExistingCustomerOrder = async (
     }
 
     const validatedResult = OrderResponseToCustomer.parse({
+      orderId,
       orderItems,
       orderStatus,
     });

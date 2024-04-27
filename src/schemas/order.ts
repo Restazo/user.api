@@ -4,8 +4,9 @@ import { OrderItem } from "./localStorage.js";
 import { UUID } from "./localStorage.js";
 
 export const OrderResponseToCustomer = z.object({
-  orderItems: z.array(OrderItem),
+  orderId: UUID,
   orderStatus: z.enum(["pending", "accepted", "declined"]),
+  orderItems: z.array(OrderItem),
 });
 export type OrderResponseToCustomer = z.infer<typeof OrderResponseToCustomer>;
 
