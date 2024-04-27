@@ -63,7 +63,12 @@ class LocalStorage {
     }
 
     if (ordersRestaurantMap) {
-      orders = Array.from(ordersRestaurantMap.values());
+      orders = Array.from(ordersRestaurantMap.entries()).map(
+        ([orderId, orderData]) => ({
+          orderId,
+          ...orderData,
+        })
+      );
     }
 
     const snapshot = {
@@ -175,6 +180,7 @@ class LocalStorage {
 
     if (existingRestarauntMap) {
       existingRestarauntMap.set(orderId, orderRequest);
+      return;
     }
 
     const newOrderObject = new Map([[orderId, orderRequest]]);
