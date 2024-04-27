@@ -1,26 +1,24 @@
 import * as z from "zod";
 
 const toNumber = z.number().or(z.string()).pipe(z.coerce.number());
-const latitude = toNumber.refine((value) => value >= -90 && value <= 90);
-const longitude = toNumber.refine((value) => value >= -180 && value <= 180);
 
 import { CoordsSchema } from "./restaurant.js";
+import { OrderItem } from "./localStorage.js";
+import { UUID } from "./localStorage.js";
 
 export const TableSchema = z.object({
-  id: z.string().uuid(),
-  restaurantId: z.string().uuid(),
+  id: UUID,
+  restaurantId: UUID,
   label: z.string().min(1),
   restaurantCoords: CoordsSchema,
 });
-
-
 
 export const TableSessionMiddlewareReqSchema = z.object({
   userCoords: CoordsSchema,
 });
 
 export const TableSessionReqSchema = z.object({
-  deviceId: z.string().uuid(),
+  deviceId: UUID,
   tableHash: z.string().min(1),
   userCoords: CoordsSchema,
 });
@@ -31,15 +29,11 @@ export const TableWaiterReqSchema = z.object({
 });
 
 export const TableDecryptedData = CoordsSchema.extend({
-  tableId: z.string().uuid(),
-});
-
-const OrderItem = z.object({
-  itemId: z.string().uuid(),
-  amount: z.number().int().min(1),
+  tableId: UUID,
 });
 
 export const TableOrderReqSchema = z.object({
+  deviceId: UUID,
   userCoords: CoordsSchema,
-  order: z.array(OrderItem),
+  orderItems: z.array(OrderItem),
 });

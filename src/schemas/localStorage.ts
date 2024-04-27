@@ -31,7 +31,7 @@ export const WaiterRequest = z.object({
   tableId: UUID,
   tableLabel: z.string().min(1),
   requestType: z.enum(["waiter", "bill"]),
-  createdAt: z.number().min(1),
+  createdAt: z.number().min(1).default(Date.now()),
 });
 export type WaiterRequest = z.infer<typeof WaiterRequest>;
 export const WaiterRequestWithoutTime = WaiterRequest.omit({ createdAt: true });
@@ -51,13 +51,17 @@ export type OrderItem = z.infer<typeof OrderItem>;
 
 const generateUUID = () => uuidv4;
 
-export const OrderRequest = z.object({
+export const OrderRequestWithOrderId = z.object({
   orderId: UUID.default(generateUUID()),
   tableId: UUID,
+  deviceId: UUID,
   tableLabel: z.string().min(1),
   orderItems: z.array(OrderItem),
-  createdAt: z.number().min(1),
+  createdAt: z.number().min(1).default(Date.now()),
 });
+export type OrderRequestWithOrderId = z.infer<typeof OrderRequestWithOrderId>;
+
+export const OrderRequest = OrderRequestWithOrderId.omit({ orderId: true });
 export type OrderRequest = z.infer<typeof OrderRequest>;
 
 export const OrderRequests = z.map(UUID, z.map(UUID, OrderRequest));
