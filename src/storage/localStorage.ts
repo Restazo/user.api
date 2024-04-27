@@ -212,8 +212,11 @@ class LocalStorage {
     }
   }
 
-  deleteFromWaiterRequests(restaurantId: UUID) {
-    this._WaiterRequests.delete(restaurantId);
+  deleteFromWaiterRequests(restaurantId: UUID, tableId: UUID) {
+    const exisintRestaurantMap = this._WaiterRequests.get(restaurantId);
+    if (exisintRestaurantMap) {
+      exisintRestaurantMap.delete(tableId);
+    }
   }
 
   deleteFromOrderRequests(restaurantId: UUID, orderId: UUID) {
