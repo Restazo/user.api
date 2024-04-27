@@ -4,6 +4,7 @@ import localStorage from "../storage/localStorage.js";
 
 import { sendResponse } from "../helpers/responses.js";
 import logger from "../helpers/logger.js";
+import { verifyOrderItems } from "../helpers/verifyOrderItems.js";
 import { signTableSessionToken } from "../helpers/jwtTools.js";
 import { compareDistance } from "../helpers/compareDistance.js";
 import decrypt from "../lib/decrypt.js";
@@ -17,18 +18,22 @@ import {
   TableDecryptedData,
   TableSessionReqSchema,
   TableWaiterReqSchema,
+  TableOrderReqSchema,
 } from "../schemas/table.js";
-import { WaiterRequest } from "../schemas/localStorage.js";
+import {
+  WaiterRequest,
+  OrderRequestWithOrderId,
+} from "../schemas/localStorage.js";
 
 export const startSession = async (req: Request, res: Response) => {
   try {
     // Validate request body
-    const validatesRequest = TableSessionReqSchema.safeParse(req.body);
-    if (!validatesRequest.success) {
+    const validatedRequest = TableSessionReqSchema.safeParse(req.body);
+    if (!validatedRequest.success) {
       return sendResponse(res, "Invalid request body", Operation.BadRequest);
     }
 
-    const { tableHash, deviceId, userCoords } = validatesRequest.data;
+    const { tableHash, deviceId, userCoords } = validatedRequest.data;
 
     // Decipher table data
     const decryptedTableData = decrypt(tableHash);
@@ -95,20 +100,19 @@ export const startSession = async (req: Request, res: Response) => {
 
 export const requestWaiter = async (req: Request, res: Response) => {
   try {
-    const validatesRequest = TableWaiterReqSchema.safeParse(req.body);
+    const validatedRequest = TableWaiterReqSchema.safeParse(req.body);
 
-    if (!validatesRequest.success) {
+    if (!validatedRequest.success) {
       return sendResponse(res, "Invalid request body", Operation.BadRequest);
     }
 
-    const { requestType } = validatesRequest.data;
+    const { requestType } = validatedRequest.data;
     const { restaurantId, label } = req.table!;
 
     const newRequest = {
       tableId: req.table!.id,
       tableLabel: req.table!.label,
       requestType: requestType,
-      createdAt: Date.now(),
     };
 
     const validatedNewRequest = WaiterRequest.parse(newRequest);
@@ -134,11 +138,70 @@ export const requestWaiter = async (req: Request, res: Response) => {
       });
     }
 
-    console.log(`WAITER REQUESTS: `, localStorage.waiterRequests().values());
-
     return sendResponse(res, "Successfully requested a waiter", Operation.Ok);
   } catch (error) {
     logger("Failed to request waiter", error);
+    return sendResponse(res, "Something went wrong", Operation.ServerError);
+  }
+};
+
+export const placeOrder = async (req: Request, res: Response) => {
+  try {
+    const validatedRequest = TableOrderReqSchema.safeParse(req.body);
+
+    if (!validatedRequest.success) {
+      console.log(validatedRequest.error);
+      return sendResponse(res, "Invalid request body", Operation.BadRequest);
+    }
+
+    const { orderItems, deviceId } = validatedRequest.data;
+
+    // verify oder itemIDs... Currently not verifying name ***TODO****
+    const existingItems = await verifyOrderItems(orderItems);
+
+    if (!existingItems) {
+      return sendResponse(res, "No order items found", Operation.BadRequest);
+    }
+    const { restaurantId, ...tableSession } = req.table!;
+
+    const orderRequestObject = {
+      tableId: tableSession.id,
+      tableLabel: tableSession.label,
+      deviceId: deviceId,
+      orderItems: orderItems,
+    };
+
+    const validatedOrderObject =
+      OrderRequestWithOrderId.parse(orderRequestObject);
+
+    // add order to local storage
+    localStorage.addOrderRequest(restaurantId, validatedOrderObject);
+
+    const connectedWaiters = localStorage.waiterConnections().get(restaurantId);
+
+    if (connectedWaiters) {
+      const snapshot = localStorage.getRequestsAndOrdersSnapshot(restaurantId);
+      // Message all waiters connected
+      const message = JSON.stringify(snapshot);
+
+      connectedWaiters.forEach((ws) => {
+        ws.send(message);
+      });
+    }
+
+    const returnObject = {
+      orderId: validatedOrderObject.orderId,
+      orderItems: validatedOrderObject.orderItems,
+    };
+
+    return sendResponse(
+      res,
+      "Successfully placed order",
+      Operation.Ok,
+      returnObject
+    );
+  } catch (error) {
+    logger("Failed to place order", error);
     return sendResponse(res, "Something went wrong", Operation.ServerError);
   }
 };

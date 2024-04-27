@@ -10,6 +10,7 @@ import { Operation } from "./schemas/responseMaps.js";
 import deviceRoutes from "./routes/deviceRoutes.js";
 import waiterRoutes from "./routes/waiterRoutes.js";
 import tableRoutes from "./routes/tableRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use(process.env.RESTAURANTS_ENDPOINTS_ROOT, restaurantsRoutes);
 app.use("/device_id", deviceRoutes);
 app.use("/waiter", waiterRoutes);
 app.use("/table-session", tableRoutes);
+app.use("/order", orderRoutes);
 
 // Respond if none of the endpoints matched
 app.all("*", (req, res, next) => {

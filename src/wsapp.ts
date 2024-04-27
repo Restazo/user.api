@@ -10,7 +10,7 @@ import { subsribeToRestaurant } from "./controllers/WSControllers/waiterControll
 import { subsribeToOrder } from "./controllers/WSControllers/customerController.js";
 
 import { sendWSResponse } from "./helpers/responses.js";
-import { deleteConnection } from "lib/deleteWSConnection.js";
+import { deleteConnection } from "./lib/deleteWSConnection.js";
 
 import { getDeviceById } from "./data/device.js";
 
@@ -109,6 +109,7 @@ wss.on("connection", async (ws: WebSocket, req: IncomingMessage) => {
     console.log(`WAITER INSTANCES: `, localStorage.waiterConnections());
     console.log(`USER INSTANCES: `, localStorage.userInstances());
     console.log(`WAITER REQUESTS: `, localStorage.waiterRequests());
+    console.log(`ORDER REQUESTS: `, localStorage.orderRequests());
   });
 
   ws.on("close", async (ws: WebSocket, req) => {
