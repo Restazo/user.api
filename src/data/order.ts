@@ -25,7 +25,7 @@ export const getOngoingOrderById = async (id: string) => {
 
     return order;
   } catch (error) {
-    console.error("Error from getTableById function");
+    console.error("Error from getOngoingOrderById function");
     throw error;
   }
 };
@@ -51,7 +51,7 @@ export const getExistingCustomerOrder = async (
       const query = `
      SELECT 
       oi.item_id AS "itemId",
-      mi.name AS "itemName"
+      mi.name AS "itemName",
       oi.amount AS "quantity"
      FROM 
       order_items AS oi
@@ -77,6 +77,7 @@ export const getExistingCustomerOrder = async (
 
     return validatedResult;
   } catch (error) {
+    console.error("Error from getExistingCustomerOrder function");
     throw error;
   }
 };
