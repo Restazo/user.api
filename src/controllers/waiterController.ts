@@ -2,12 +2,14 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 
 import pool from "../db.js";
+import localStorage from "../storage/localStorage.js";
 
-import { sendResponse } from "../helpers/responses.js";
+import { sendResponse, sendWSResponse } from "../helpers/responses.js";
 import logger from "../helpers/logger.js";
 import { generatePin } from "../helpers/generatePin.js";
 import sendConfirmationEmail from "../helpers/sendConfirmationEmail.js";
 import { signTokens } from "../helpers/jwtTools.js";
+import { registerNewOrder } from "../lib/registerNewOrder.js";
 
 import { getFullWaiterData } from "../data/waiter.js";
 
@@ -20,6 +22,9 @@ import {
   setWaiterConfirmationPin,
 } from "../lib/waiter.js";
 import { waiterLogInReq } from "../schemas/waiter.js";
+import { ReviewOrderQuery } from "../schemas/order.js";
+import { OrderRequestWithOrderId, UUID } from "../schemas/localStorage.js";
+import { OrderResponseToCustomer } from "../schemas/order.js";
 
 export const confirmationPinValidityPeriod = Number(
   process.env.DEFAULT_PIN_VALIDITY_PERIOD
@@ -180,5 +185,78 @@ export const getSession = async (req: Request, res: Response) => {
       "Failed to renew your session",
       Operation.ServerError
     );
+  }
+};
+
+export const reviewOrder = async (req: Request, res: Response) => {
+  try {
+    const validatedQueryParams = ReviewOrderQuery.safeParse(req.query);
+    const validatedParams = UUID.safeParse(req.params.orderId);
+
+    if (!validatedParams.success || !validatedQueryParams.success) {
+      return sendResponse(res, "Invalid request", Operation.BadRequest);
+    }
+    const orderId = validatedParams.data;
+    const { action } = validatedQueryParams.data;
+    const { restaurantId } = req.waiter;
+
+    const existingOrder = localStorage.getOrder(restaurantId, orderId);
+
+    if (!existingOrder) {
+      return sendResponse(res, "No order found", Operation.BadRequest);
+    }
+
+    const orderWithOrderId: OrderRequestWithOrderId = {
+      ...existingOrder,
+      orderId,
+    };
+
+    let orderStatus = "";
+
+    if (action === "decline") {
+      orderStatus = "declined";
+      await localStorage.deleteFromOrderRequests(restaurantId, orderId);
+    } else {
+      orderStatus = "accepted";
+      // add order to database.
+      await registerNewOrder(restaurantId, orderWithOrderId);
+      await localStorage.deleteFromOrderRequests(restaurantId, orderId);
+    }
+
+    const customerWS = localStorage
+      .userInstances()
+      .get(orderWithOrderId.deviceId);
+
+    const orderDataToCustomer: OrderResponseToCustomer = {
+      orderItems: orderWithOrderId.orderItems,
+      orderStatus: orderStatus as "declined" | "accepted",
+    };
+
+    if (customerWS) {
+      return sendWSResponse(
+        customerWS,
+        `The restaurant has ${orderStatus} your order`,
+        Operation.Ok,
+        orderDataToCustomer
+      );
+    }
+
+    // send message to all waiters
+    const connectedWaiters = localStorage.waiterConnections().get(restaurantId);
+
+    if (connectedWaiters) {
+      const snapshot = localStorage.getRequestsAndOrdersSnapshot(restaurantId);
+      // Message all waiters connected
+      const message = JSON.stringify(snapshot);
+
+      connectedWaiters.forEach((ws) => {
+        ws.send(message);
+      });
+    }
+
+    return sendResponse(res, "Successfully placed order", Operation.Ok);
+  } catch (error) {
+    logger("Failed to place order", error);
+    return sendResponse(res, "Something went wrong", Operation.ServerError);
   }
 };
