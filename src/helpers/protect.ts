@@ -1,12 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
-import { sendResponse } from "./responses.js";
-import { Operation } from "../schemas/responseMaps.js";
-import { TokenType, verifyToken } from "./jwtTools.js";
 import pool from "../db.js";
+
+import { sendResponse } from "./responses.js";
+import { TokenType, verifyToken } from "./jwtTools.js";
 import { deleteWaiterRefreshToken } from "../lib/waiter.js";
+
 import { waiterAuthTokensPayload } from "../schemas/waiter.js";
+import { Operation } from "../schemas/responseMaps.js";
 
 export const protectWaiterRoute = async (
   req: Request,
@@ -29,12 +31,13 @@ export const protectWaiterRoute = async (
 
   const result = await pool.query(
     `SELECT refresh_token as "refreshToken", id FROM waiter WHERE id = $1;`,
-    [accessTokenPayload.waiter_id]
+    [accessTokenPayload.waiterId]
   );
 
   if (result.rowCount === 0) {
     return sendResponse(res, "Invalid token", Operation.BadRequest);
   }
+
   const oldRefreshToken = result.rows[0].refreshToken;
 
   if (oldRefreshToken === null) {
@@ -49,10 +52,10 @@ export const protectWaiterRoute = async (
 
   if (accessTokenValid) {
     req.waiter = {
-      waiter_id: accessTokenPayload.waiter_id,
-      waiter_email: accessTokenPayload.waiter_email,
-      restaurant_id: accessTokenPayload.restaurant_id,
-      waiter_name: accessTokenPayload.waiter_name,
+      waiterId: accessTokenPayload.waiterId,
+      waiterEmail: accessTokenPayload.waiterEmail,
+      restaurantId: accessTokenPayload.restaurantId,
+      waiterName: accessTokenPayload.waiterName,
     };
     return next();
   }
@@ -61,16 +64,16 @@ export const protectWaiterRoute = async (
 
   if (refreshTokenValid) {
     req.waiter = {
-      waiter_id: accessTokenPayload.waiter_id,
-      waiter_email: accessTokenPayload.waiter_email,
-      restaurant_id: accessTokenPayload.restaurant_id,
-      waiter_name: accessTokenPayload.waiter_name,
+      waiterId: accessTokenPayload.waiterId,
+      waiterEmail: accessTokenPayload.waiterEmail,
+      restaurantId: accessTokenPayload.restaurantId,
+      waiterName: accessTokenPayload.waiterName,
     };
 
     return next();
   }
 
-  await deleteWaiterRefreshToken(accessTokenPayload.waiter_id);
+  await deleteWaiterRefreshToken(accessTokenPayload.waiterId);
   return sendResponse(
     res,
     "Your session has expired, please log in again",

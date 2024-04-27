@@ -1,4 +1,5 @@
 import { Response, response } from "express";
+import WebSocket from "ws";
 import {
   Operation,
   Status,
@@ -29,4 +30,16 @@ export const sendResponse = async (
   const resBody = new ResponseBody(status, message, data);
 
   return res.status(statusCode).json(resBody);
+};
+
+export const sendWSResponse = async (
+  ws: WebSocket,
+  message: string,
+  operation: Operation,
+  data?: object
+): Promise<void> => {
+  const status = statusMap[operation];
+  const resBody = JSON.stringify(new ResponseBody(status, message, data));
+
+  return ws.send(resBody);
 };
