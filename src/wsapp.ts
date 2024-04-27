@@ -10,7 +10,7 @@ import { subsribeToRestaurant } from "./controllers/WSControllers/waiterControll
 import { subsribeToOrder } from "./controllers/WSControllers/customerController.js";
 
 import { sendWSResponse } from "./helpers/responses.js";
-import { deleteConnection } from "lib/deleteWSConnection.js";
+import { deleteConnection } from "./lib/deleteWSConnection.js";
 
 import { getDeviceById } from "./data/device.js";
 
