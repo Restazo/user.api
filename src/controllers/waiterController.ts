@@ -10,9 +10,11 @@ import { generatePin } from "../helpers/generatePin.js";
 import sendConfirmationEmail from "../helpers/sendConfirmationEmail.js";
 import { signTokens } from "../helpers/jwtTools.js";
 import { registerNewOrder } from "../lib/registerNewOrder.js";
+import { sendSnapshotToWaiters } from "../lib/sendWSMessage.js";
 
 import { getFullWaiterData } from "../data/waiter.js";
 import { getTableById } from "../data/table.js";
+import { getOngoingOrdersSnapshot } from "../data/order.js";
 
 import { Operation } from "../schemas/responseMaps.js";
 import {
@@ -221,18 +223,23 @@ export const reviewOrder = async (req: Request, res: Response) => {
       orderStatus = "accepted";
       // add order to database.
       await registerNewOrder(restaurantId, orderWithOrderId);
+      // Delete it from local storage
       await localStorage.deleteFromOrderRequests(restaurantId, orderId);
-    }
 
-    const customerWS = localStorage
-      .userInstances()
-      .get(orderWithOrderId.deviceId);
+      // send ongoingOrders snapshot
+      await sendSnapshotToWaiters(restaurantId, "ongoing");
+    }
 
     const orderDataToCustomer: OrderResponseToCustomer = {
       orderId: orderId,
       orderStatus: orderStatus as "declined" | "accepted",
       orderItems: orderWithOrderId.orderItems,
     };
+
+    // notify customer of his order
+    const customerWS = localStorage
+      .userInstances()
+      .get(orderWithOrderId.deviceId);
 
     if (customerWS) {
       await sendWSResponse(
@@ -243,18 +250,7 @@ export const reviewOrder = async (req: Request, res: Response) => {
       );
     }
 
-    // send message to all waiters
-    const connectedWaiters = localStorage.waiterConnections().get(restaurantId);
-
-    if (connectedWaiters) {
-      const snapshot = localStorage.getRequestsAndOrdersSnapshot(restaurantId);
-      // Message all waiters connected
-      const message = JSON.stringify(snapshot);
-
-      connectedWaiters.forEach(async (ws) => {
-        await ws.send(message);
-      });
-    }
+    await sendSnapshotToWaiters(restaurantId, "requests");
 
     return sendResponse(res, `Successfully ${orderStatus} order`, Operation.Ok);
   } catch (error) {

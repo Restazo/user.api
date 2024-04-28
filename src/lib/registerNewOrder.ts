@@ -11,8 +11,6 @@ export const registerNewOrder = async (
   try {
     await client.query("BEGIN");
 
-    console.log(orderObject)
-
     // Insert data in the restaurant_order
     const restaurantOrderQuery = `
       INSERT INTO restaurant_order (id, restaurant_id, created_at)
