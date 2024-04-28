@@ -8,6 +8,7 @@ import { sendWSResponse } from "../../helpers/responses.js";
 import logger from "../../helpers/logger.js";
 import { TokenType, verifyToken } from "../../helpers/jwtTools.js";
 import { deleteWaiterRefreshToken } from "../../lib/waiter.js";
+import { sendSnapshotToWaiters } from "../../lib/sendWSMessage.js";
 
 import { Operation } from "../../schemas/responseMaps.js";
 import { WaiterRequestObj } from "../../schemas/types/waiter.js";
@@ -53,16 +54,11 @@ export const subsribeToRestaurant = async (
     }
 
     // Return ALL requests pending (waiter calls/ pending orders/ )
-    const snapshot = localStorage.getRequestsAndOrdersSnapshot(
-      waiter.restaurantId
-    );
 
-    return sendWSResponse(
-      ws,
-      "Successfully subscribed",
-      Operation.Ok,
-      snapshot
-    );
+    await sendSnapshotToWaiters(waiter.restaurantId, "ongoing");
+    await sendSnapshotToWaiters(waiter.restaurantId, "requests");
+
+    return sendWSResponse(ws, "Successfully subscribed", Operation.Ok);
   } catch (error) {
     logger("Failed to subscribe to restaurant", error);
     return sendWSResponse(
