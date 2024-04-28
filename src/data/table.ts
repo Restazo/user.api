@@ -1,6 +1,5 @@
 import pool from "../db.js";
 
-import { Table } from "../schemas/types/table.js";
 import { TableSchema } from "../schemas/table.js";
 
 export const getTableById = async (id: string) => {
