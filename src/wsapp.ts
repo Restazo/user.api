@@ -89,7 +89,7 @@ wss.on("connection", async (ws: WebSocket, req: IncomingMessage) => {
           // call subscribe controller
           await subsribeToOrder(
             ws,
-            data.payload.accessToken,
+            data.payload.accessToken.split(" ")[1],
             connectedDevice,
             data.payload.orderId
           );
@@ -97,11 +97,12 @@ wss.on("connection", async (ws: WebSocket, req: IncomingMessage) => {
         case "/subscribe/restaurant":
           await subsribeToRestaurant(
             ws,
-            data.payload.accessToken,
+            data.payload.accessToken.split(" ")[1],
             connectedDevice
           );
       }
     } catch (error) {
+      console.log(error);
       return sendWSResponse(ws, "Something went wrong", Operation.ServerError);
     }
 
@@ -109,6 +110,7 @@ wss.on("connection", async (ws: WebSocket, req: IncomingMessage) => {
     console.log(`WAITER INSTANCES: `, localStorage.waiterConnections());
     console.log(`USER INSTANCES: `, localStorage.userInstances());
     console.log(`WAITER REQUESTS: `, localStorage.waiterRequests());
+    console.log(`ORDER REQUESTS: `, localStorage.orderRequests());
   });
 
   ws.on("close", async (ws: WebSocket, req) => {

@@ -1,7 +1,10 @@
 import pool from "../db.js";
 import localStorage from "../storage/localStorage.js";
 
+import { formatOngoingOrdersSnapshot } from "../helpers/formatOngoingOrdersSnapshot.js";
+
 import { OrderResponseToCustomer } from "../schemas/order.js";
+import { OngoingOrdersSnapshot } from "../schemas/order.js";
 
 export const getOngoingOrderById = async (id: string) => {
   try {
@@ -25,7 +28,7 @@ export const getOngoingOrderById = async (id: string) => {
 
     return order;
   } catch (error) {
-    console.error("Error from getTableById function");
+    console.error("Error from getOngoingOrderById function");
     throw error;
   }
 };
@@ -51,10 +54,10 @@ export const getExistingCustomerOrder = async (
       const query = `
      SELECT 
       oi.item_id AS "itemId",
-      mi.name AS "itemName"
-      oi.amount AS "quantity"
+      mi.name AS "itemName",
+      oi.quantity 
      FROM 
-      order_items AS oi
+      order_item AS oi
      JOIN
       menu_item AS mi ON oi.item_id = mi.id
      WHERE order_id = $1
@@ -70,13 +73,56 @@ export const getExistingCustomerOrder = async (
       }
     }
 
+    console.log(orderId);
+
     const validatedResult = OrderResponseToCustomer.parse({
+      orderId,
       orderItems,
       orderStatus,
     });
 
     return validatedResult;
   } catch (error) {
+    console.error("Error from getExistingCustomerOrder function");
+    throw error;
+  }
+};
+
+export const getOngoingOrdersSnapshot = async (
+  restaurantId: string
+): Promise<OngoingOrdersSnapshot> => {
+  try {
+    const query = `
+     SELECT 
+      rt.id AS "tableId",
+      rt.label AS "tableLabel",
+      oo.order_id AS "orderId",
+      oi.quantity,
+      oi.item_id AS "itemId",
+      mi.name AS "itemName"
+     FROM 
+      restaurant_table rt
+     LEFT JOIN
+      ongoing_order oo ON oo.table_id = rt.id
+     LEFT JOIN
+      order_item oi ON oi.order_id = oo.order_id
+     LEFT JOIN 
+      menu_item mi ON mi.id = oi.item_id
+     WHERE 
+      rt.restaurant_id = $1
+     `;
+
+    const result = await pool.query(query, [restaurantId]);
+    const rows = result.rows;
+
+    if (!rows) {
+    }
+
+    const formattedData = await formatOngoingOrdersSnapshot(rows);
+
+    return formattedData;
+  } catch (error) {
+    console.error("Error from getOngoingOrdersSnapshot function");
     throw error;
   }
 };

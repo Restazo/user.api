@@ -11,6 +11,7 @@ import {
   WaiterRequestWithoutTime,
   OrderItem,
   OrderRequest,
+  OrderRequestWithOrderId,
   OrderRequests,
 } from "../schemas/localStorage.js";
 
@@ -45,6 +46,7 @@ class LocalStorage {
   waiterRequests(): WaiterRequests {
     return new Map(this._WaiterRequests);
   }
+
   orderRequests(): OrderRequests {
     return new Map(this._OrderRequests);
   }
@@ -61,7 +63,12 @@ class LocalStorage {
     }
 
     if (ordersRestaurantMap) {
-      orders = Array.from(ordersRestaurantMap.values());
+      orders = Array.from(ordersRestaurantMap.entries()).map(
+        ([orderId, orderData]) => ({
+          orderId,
+          ...orderData,
+        })
+      );
     }
 
     const snapshot = {
@@ -75,7 +82,13 @@ class LocalStorage {
     return snapshot;
   }
 
-  
+  getOrder(restaurantId: UUID, orderId: UUID) {
+    const orderRequestsReference = new Map(this._OrderRequests);
+    const exisintRestaurantMap = orderRequestsReference.get(restaurantId);
+    if (exisintRestaurantMap) {
+      return exisintRestaurantMap.get(orderId);
+    }
+  }
 
   // **************** ADD METHODS ****************
   // Add to all cnnections Map
@@ -160,6 +173,20 @@ class LocalStorage {
     }
   }
 
+  addOrderRequest(restaurantId: UUID, data: OrderRequestWithOrderId) {
+    const existingRestarauntMap = this._OrderRequests.get(restaurantId);
+
+    const { orderId, ...orderRequest } = data;
+
+    if (existingRestarauntMap) {
+      existingRestarauntMap.set(orderId, orderRequest);
+      return;
+    }
+
+    const newOrderObject = new Map([[orderId, orderRequest]]);
+    this._OrderRequests.set(restaurantId, newOrderObject);
+  }
+
   // **************** DELETE METHODS ****************
   deleteFromWebSocketConnections(deviceId: UUID) {
     this._webSocketConnections.delete(deviceId);
@@ -185,8 +212,18 @@ class LocalStorage {
     }
   }
 
-  deleteFromWaiterRequests(restaurantId: UUID) {
-    this._WaiterRequests.delete(restaurantId);
+  deleteFromWaiterRequests(restaurantId: UUID, tableId: UUID) {
+    const exisintRestaurantMap = this._WaiterRequests.get(restaurantId);
+    if (exisintRestaurantMap) {
+      exisintRestaurantMap.delete(tableId);
+    }
+  }
+
+  deleteFromOrderRequests(restaurantId: UUID, orderId: UUID) {
+    const existingRestaurantMap = this._OrderRequests.get(restaurantId);
+    if (existingRestaurantMap) {
+      existingRestaurantMap.delete(orderId);
+    }
   }
 }
 
