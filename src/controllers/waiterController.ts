@@ -1,14 +1,22 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 
-import { sendResponse } from "../helpers/responses.js";
-import { Operation } from "../schemas/responseMaps.js";
 import pool from "../db.js";
-import { getFullWaiterData } from "../data/waiter.js";
+import localStorage from "../storage/localStorage.js";
+
+import { sendResponse, sendWSResponse } from "../helpers/responses.js";
 import logger from "../helpers/logger.js";
 import { generatePin } from "../helpers/generatePin.js";
 import sendConfirmationEmail from "../helpers/sendConfirmationEmail.js";
 import { signTokens } from "../helpers/jwtTools.js";
+import { registerNewOrder } from "../lib/registerNewOrder.js";
+import { sendSnapshotToWaiters } from "../lib/sendWSMessage.js";
+import { markTableOrders } from "../lib/markTableOrders.js";
+
+import { getFullWaiterData } from "../data/waiter.js";
+import { getTableById } from "../data/table.js";
+
+import { Operation } from "../schemas/responseMaps.js";
 import {
   deleteWaiterRefreshToken,
   logInTheWaiter,
@@ -17,6 +25,9 @@ import {
   setWaiterConfirmationPin,
 } from "../lib/waiter.js";
 import { waiterLogInReq } from "../schemas/waiter.js";
+import { ReviewOrderQuery, MarkOrdersQuery } from "../schemas/order.js";
+import { OrderRequestWithOrderId, UUID } from "../schemas/localStorage.js";
+import { OrderResponseToCustomer } from "../schemas/order.js";
 
 export const confirmationPinValidityPeriod = Number(
   process.env.DEFAULT_PIN_VALIDITY_PERIOD
@@ -109,10 +120,10 @@ export const waiterLogInConfirm = async (req: Request, res: Response) => {
     }
 
     const { accessToken, refreshToken } = signTokens({
-      waiter_id: waiterData.id,
-      restaurant_id: waiterData.restaurantId,
-      waiter_email: waiterData.email,
-      waiter_name: waiterData.name,
+      waiterId: waiterData.id,
+      restaurantId: waiterData.restaurantId,
+      waiterEmail: waiterData.email,
+      waiterName: waiterData.name,
     });
 
     await logInTheWaiter(validatedReq.data.email, refreshToken, client);
@@ -141,7 +152,7 @@ export const waiterLogInConfirm = async (req: Request, res: Response) => {
 
 export const waiterLogOut = async (req: Request, res: Response) => {
   try {
-    await deleteWaiterRefreshToken(req.waiter.waiter_id);
+    await deleteWaiterRefreshToken(req.waiter.waiterId);
 
     return sendResponse(res, "Successful log out", Operation.Ok);
   } catch (e) {
@@ -152,21 +163,21 @@ export const waiterLogOut = async (req: Request, res: Response) => {
 
 export const getSession = async (req: Request, res: Response) => {
   const { accessToken, refreshToken } = signTokens({
-    waiter_id: req.waiter.waiter_id,
-    waiter_email: req.waiter.waiter_email,
-    restaurant_id: req.waiter.restaurant_id,
-    waiter_name: req.waiter.waiter_name,
+    waiterId: req.waiter.waiterId,
+    waiterEmail: req.waiter.waiterEmail,
+    restaurantId: req.waiter.restaurantId,
+    waiterName: req.waiter.waiterName,
   });
 
   try {
     const waiterName = await renewWaiterRefreshToken(
       refreshToken,
-      req.waiter.waiter_id
+      req.waiter.waiterId
     );
 
     res.setHeader("Authorization", `Bearer ${accessToken}`);
     return sendResponse(res, "Successfuly renewed your session", Operation.Ok, {
-      email: req.waiter.waiter_email,
+      email: req.waiter.waiterEmail,
       name: waiterName,
     });
   } catch (e) {
@@ -177,5 +188,163 @@ export const getSession = async (req: Request, res: Response) => {
       "Failed to renew your session",
       Operation.ServerError
     );
+  }
+};
+
+export const reviewOrder = async (req: Request, res: Response) => {
+  try {
+    const validatedQueryParams = ReviewOrderQuery.safeParse(req.query);
+    const validatedParams = UUID.safeParse(req.params.orderId);
+
+    if (!validatedParams.success || !validatedQueryParams.success) {
+      return sendResponse(res, "Invalid request", Operation.BadRequest);
+    }
+    const orderId = validatedParams.data;
+    const { action } = validatedQueryParams.data;
+    const { restaurantId } = req.waiter;
+
+    const existingOrder = localStorage.getOrder(restaurantId, orderId);
+
+    if (!existingOrder) {
+      return sendResponse(res, "No order found", Operation.BadRequest);
+    }
+
+    const orderWithOrderId: OrderRequestWithOrderId = {
+      ...existingOrder,
+      orderId,
+    };
+
+    let orderStatus = "";
+
+    if (action === "decline") {
+      orderStatus = "declined";
+      await localStorage.deleteFromOrderRequests(restaurantId, orderId);
+    } else {
+      orderStatus = "accepted";
+      // add order to database.
+      await registerNewOrder(restaurantId, orderWithOrderId);
+      // Delete it from local storage
+      await localStorage.deleteFromOrderRequests(restaurantId, orderId);
+
+      // send ongoingOrders snapshot
+      await sendSnapshotToWaiters(restaurantId, "ongoing");
+    }
+
+    const orderDataToCustomer: OrderResponseToCustomer = {
+      orderId: orderId,
+      orderStatus: orderStatus as "declined" | "accepted",
+      orderItems: orderWithOrderId.orderItems,
+    };
+
+    // notify customer of his order
+    const customerWS = localStorage
+      .userInstances()
+      .get(orderWithOrderId.deviceId);
+
+    if (customerWS) {
+      await sendWSResponse(
+        customerWS,
+        `The restaurant has ${orderStatus} your order`,
+        Operation.Ok,
+        orderDataToCustomer
+      );
+    }
+
+    await sendSnapshotToWaiters(restaurantId, "requests");
+
+    return sendResponse(res, `Successfully ${orderStatus} order`, Operation.Ok);
+  } catch (error) {
+    logger("Failed to place order", error);
+    return sendResponse(res, "Something went wrong", Operation.ServerError);
+  }
+};
+
+export const dismissRequest = async (req: Request, res: Response) => {
+  try {
+    const validatedParams = UUID.safeParse(req.params.tableId);
+
+    if (!validatedParams.success) {
+      return sendResponse(res, "Invalid request", Operation.BadRequest);
+    }
+    const tableId = validatedParams.data;
+    const { restaurantId } = req.waiter;
+
+    const existingTable = await getTableById(tableId);
+
+    if (!existingTable) {
+      return sendResponse(res, "No table found", Operation.BadRequest);
+    }
+
+    const existingRequest = localStorage
+      .waiterRequests()
+      .get(restaurantId)
+      ?.get(tableId);
+
+    if (!existingRequest) {
+      return sendResponse(res, "No request found", Operation.BadRequest);
+    }
+
+    await localStorage.deleteFromWaiterRequests(restaurantId, tableId);
+
+    // send message to all waiters
+    const connectedWaiters = localStorage.waiterConnections().get(restaurantId);
+
+    if (connectedWaiters) {
+      const snapshot = localStorage.getRequestsAndOrdersSnapshot(restaurantId);
+      // Message all waiters connected
+      const message = JSON.stringify(snapshot);
+      connectedWaiters.forEach((ws) => {
+        ws.send(message);
+      });
+    }
+
+    return sendResponse(
+      res,
+      "Successfully dismissed the request",
+      Operation.Ok
+    );
+  } catch (error) {
+    logger("Failed to place order", error);
+    return sendResponse(res, "Something went wrong", Operation.ServerError);
+  }
+};
+
+export const markOrder = async (req: Request, res: Response) => {
+  try {
+    const validatedQueryParams = MarkOrdersQuery.safeParse(req.query);
+    const validatedParams = UUID.safeParse(req.params.tableId);
+
+    if (!validatedParams.success || !validatedQueryParams.success) {
+      return sendResponse(res, "Invalid request", Operation.BadRequest);
+    }
+
+    const tableId = validatedParams.data;
+    const { mark } = validatedQueryParams.data;
+    const { restaurantId } = req.waiter;
+
+    const existingTable = await getTableById(tableId);
+
+    if (!existingTable) {
+      return sendResponse(res, "No table found", Operation.BadRequest);
+    }
+
+    if (existingTable.restaurantId !== restaurantId) {
+      return sendResponse(res, "No table found", Operation.BadRequest);
+    }
+
+    const customerPaid = mark == "paid" ? true : false;
+
+    const updateOrders = await markTableOrders(tableId, customerPaid);
+
+    if (!updateOrders) {
+      return sendResponse(res, "No orders found", Operation.BadRequest);
+    }
+
+    await sendSnapshotToWaiters(restaurantId, "ongoing");
+
+    return sendResponse(res, `Successfully updated table orders`, Operation.Ok);
+  } catch (error) {
+    logger("Failed to place order", error);
+    return sendResponse(res, "Something went wrong", Operation.ServerError);
   }
 };
