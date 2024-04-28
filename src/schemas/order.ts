@@ -14,6 +14,10 @@ export const ReviewOrderQuery = z.object({
   action: z.enum(["accept", "decline"]),
 });
 
+export const MarkOrdersQuery = z.object({
+  mark: z.enum(["paid", "unpaid"]),
+});
+
 export const OngoingOrdersSnapshotRaw = z.array(
   z.object({
     tableId: UUID,

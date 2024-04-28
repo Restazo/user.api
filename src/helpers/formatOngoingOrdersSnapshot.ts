@@ -7,7 +7,6 @@ export const formatOngoingOrdersSnapshot = (
   data: OngoingOrdersSnapshotRaw
 ): OngoingOrdersSnapshot => {
   try {
-    console.log(data);
     const formattedData = {
       field: "ongoingOrders",
       tables: [] as any,

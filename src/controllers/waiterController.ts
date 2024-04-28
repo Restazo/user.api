@@ -11,10 +11,10 @@ import sendConfirmationEmail from "../helpers/sendConfirmationEmail.js";
 import { signTokens } from "../helpers/jwtTools.js";
 import { registerNewOrder } from "../lib/registerNewOrder.js";
 import { sendSnapshotToWaiters } from "../lib/sendWSMessage.js";
+import { markTableOrders } from "../lib/markTableOrders.js";
 
 import { getFullWaiterData } from "../data/waiter.js";
 import { getTableById } from "../data/table.js";
-import { getOngoingOrdersSnapshot } from "../data/order.js";
 
 import { Operation } from "../schemas/responseMaps.js";
 import {
@@ -25,7 +25,7 @@ import {
   setWaiterConfirmationPin,
 } from "../lib/waiter.js";
 import { waiterLogInReq } from "../schemas/waiter.js";
-import { ReviewOrderQuery } from "../schemas/order.js";
+import { ReviewOrderQuery, MarkOrdersQuery } from "../schemas/order.js";
 import { OrderRequestWithOrderId, UUID } from "../schemas/localStorage.js";
 import { OrderResponseToCustomer } from "../schemas/order.js";
 
@@ -303,6 +303,46 @@ export const dismissRequest = async (req: Request, res: Response) => {
       "Successfully dismissed the request",
       Operation.Ok
     );
+  } catch (error) {
+    logger("Failed to place order", error);
+    return sendResponse(res, "Something went wrong", Operation.ServerError);
+  }
+};
+
+export const markOrder = async (req: Request, res: Response) => {
+  try {
+    const validatedQueryParams = MarkOrdersQuery.safeParse(req.query);
+    const validatedParams = UUID.safeParse(req.params.tableId);
+
+    if (!validatedParams.success || !validatedQueryParams.success) {
+      return sendResponse(res, "Invalid request", Operation.BadRequest);
+    }
+
+    const tableId = validatedParams.data;
+    const { mark } = validatedQueryParams.data;
+    const { restaurantId } = req.waiter;
+
+    const existingTable = await getTableById(tableId);
+
+    if (!existingTable) {
+      return sendResponse(res, "No table found", Operation.BadRequest);
+    }
+
+    if (existingTable.restaurantId !== restaurantId) {
+      return sendResponse(res, "No table found", Operation.BadRequest);
+    }
+
+    const customerPaid = mark == "paid" ? true : false;
+
+    const updateOrders = await markTableOrders(tableId, customerPaid);
+
+    if (!updateOrders) {
+      return sendResponse(res, "No orders found", Operation.BadRequest);
+    }
+
+    await sendSnapshotToWaiters(restaurantId, "ongoing");
+
+    return sendResponse(res, `Successfully updated table orders`, Operation.Ok);
   } catch (error) {
     logger("Failed to place order", error);
     return sendResponse(res, "Something went wrong", Operation.ServerError);

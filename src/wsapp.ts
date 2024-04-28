@@ -102,25 +102,13 @@ wss.on("connection", async (ws: WebSocket, req: IncomingMessage) => {
           );
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
       return sendWSResponse(ws, "Something went wrong", Operation.ServerError);
     }
-
-    console.log("ALL CONNECTIONS: ", localStorage.webSocketConnections());
-    console.log(`WAITER INSTANCES: `, localStorage.waiterConnections());
-    console.log(`USER INSTANCES: `, localStorage.userInstances());
-    console.log(`WAITER REQUESTS: `, localStorage.waiterRequests());
-    console.log(`ORDER REQUESTS: `, localStorage.orderRequests());
   });
 
   ws.on("close", async (ws: WebSocket, req) => {
     await deleteConnection(connectedDevice, restaurantId);
-    console.log(`user with deviceid: ${connectedDevice} disconnected`);
-
-    console.log("ALL CONNECTIONS: ", localStorage.webSocketConnections());
-    console.log(`WAITER INSTANCES: `, localStorage.waiterConnections());
-    console.log(`USER INSTANCES: `, localStorage.userInstances());
-    console.log(`WAITER REQUESTS: `, localStorage.waiterRequests());
   });
 });
 
