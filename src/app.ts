@@ -29,16 +29,6 @@ app.use(
 
 app.use(express.json());
 
-import { getOngoingOrdersSnapshot } from "./data/order.js";
-app.use("/test", async (req, res) => {
-  const id = "e8226847-064b-4be8-bac3-d4151e07bbad";
-  const data = await getOngoingOrdersSnapshot(id);
-  console.log(JSON.stringify(data, null, 2))
- 
-  res.send("ok");
-});
-
-
 app.use(process.env.RESTAURANTS_ENDPOINTS_ROOT, restaurantsRoutes);
 app.use("/device_id", deviceRoutes);
 app.use("/waiter", waiterRoutes);
